@@ -591,7 +591,7 @@ namespace PartCommander
             curVal = Mathf.Clamp(curVal, fr.minValue, fr.maxValue);
             curVal = GUILayout.HorizontalSlider(curVal, fr.minValue, fr.maxValue);
             GUILayout.Space(10f);
-            curVal = Mathf.Round(curVal * fr.stepIncrement) / fr.stepIncrement;
+            curVal = Mathf.CeilToInt(curVal / fr.stepIncrement) * fr.stepIncrement;
             setPartModuleFieldValue(multiEngineMode, symLock, pm, f, curVal);
         }
 
