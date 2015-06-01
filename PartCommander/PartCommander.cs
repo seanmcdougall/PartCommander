@@ -53,24 +53,23 @@ namespace PartCommander
 
         private GUIStyle resizeButtonStyle;
 
-        internal static String PathPlugin = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location).Replace("\\", "/");
-        internal static String texturePath = string.Format("{0}/textures", PathPlugin);
-
         private Texture2D texResizeOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texResizeOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texToolbar = new Texture2D(38, 38, TextureFormat.ARGB32, false);
 
         private ApplicationLauncherButton launcherButton = null;
 
+        // Default window size
+        // TODO: put this in a config so it remembers between sessions
         private int windowDefaultX = Screen.width - 270;
         private int windowDefaultY = Screen.height / 2 - 200;
         private float windowDefaultWidth = 250f;
         private float windowDefaultHeight = 400f;
 
-
+        // ------------------------------- Unity Events --------------------------------
         public void Awake()
         {
-            // Load our skin/styles/textures
+            LoadTextures();
             skin = SetupSkin();
 
             // Hook into events for Application Launcher
@@ -89,30 +88,51 @@ namespace PartCommander
             GameEvents.onHideUI.Add(hideUI);
 
             // Load Application Launcher
-            if (launcherButton == null)
+            if (launcherButton == null) 
             {
                 OnGUIApplicationLauncherReady();
             }
 
         }
 
-        // Creates application launcher button
-        private void OnGUIApplicationLauncherReady()
+        public void Update()
         {
-            if (launcherButton == null)
+            handleResize();
+            windowHover();
+            getActiveParts();
+
+        }
+
+        public void OnGUI()
+        {
+            if (visibleWindow && visibleUI)
             {
-                launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, texToolbar);
+                GUI.skin = skin;
+                windowRect = GUILayout.Window(windowId, windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
             }
         }
 
-        // Sets up skin and styles, loads textures
+        protected void OnDestroy()
+        {
+            visibleWindow = false;
+            GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
+            GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
+            removeLauncherButton();
+
+            if (InputLockManager.lockStack.ContainsKey(controlsLockID))
+                InputLockManager.RemoveControlLock(controlsLockID);
+        }
+
+        // -------------------------------------- Skin/Textures ------------------------------------------
+        private void LoadTextures()
+        {
+            texResizeOn = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_on", false);
+            texResizeOff = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_off", false);
+            texToolbar = GameDatabase.Instance.GetTexture("PartCommander/textures/toolbar", false);
+        }
+
         private GUISkin SetupSkin()
         {
-            // Load textures
-            loadTexture(ref texResizeOn, "resize_on.png");
-            loadTexture(ref texResizeOff, "resize_off.png");
-            loadTexture(ref texToolbar, "toolbar.png");
-
             // Setup skin
             GUISkin skin = GameObject.Instantiate(HighLogic.Skin) as GUISkin;
 
@@ -150,6 +170,15 @@ namespace PartCommander
             return (skin);
         }
 
+        // ------------------------------------------ Application Launcher / UI ---------------------------------------
+        private void OnGUIApplicationLauncherReady()
+        {
+            if (launcherButton == null)
+            {
+                launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, texToolbar);
+            }
+        }
+
         public void showUI()
         {
             visibleUI = true;
@@ -170,14 +199,6 @@ namespace PartCommander
             visibleWindow = false;
         }
 
-        public void Update()
-        {
-            handleResize();
-            controlLock();
-            getActiveParts();
-
-        }
-
         private void handleResize()
         {
             if (Input.GetMouseButtonUp(0))
@@ -194,7 +215,7 @@ namespace PartCommander
             }
         }
 
-        private void controlLock()
+        private void windowHover()
         {
             // Lock camera controls when over window
             Vector2 mousePos = Input.mousePosition;
@@ -218,34 +239,68 @@ namespace PartCommander
             }
         }
 
-        private void setHighlighting(Part p, bool highlight)
+        public void removeLauncherButton()
         {
-            p.SetHighlight(highlight, false);
-            if (symLock)
+            if (launcherButton != null)
             {
-                foreach (Part symPart in p.symmetryCounterparts)
-                {
-                    symPart.SetHighlight(highlight, false);
-                }
+                ApplicationLauncher.Instance.RemoveModApplication(launcherButton);
+
             }
         }
 
-
-        private void clearHighlighting()
+        public void onSceneChange(GameScenes scene)
         {
-            foreach (Part p in activeParts)
-            {
-                p.SetHighlight(false, false);
-                if (symLock)
-                {
-                    foreach (Part symPart in p.symmetryCounterparts)
-                    {
-                        symPart.SetHighlight(false, false);
-                    }
-                }
-            }
+            removeLauncherButton();
         }
 
+        // ----------------------------------- Main Window Logic ---------------------------
+        public void mainWindow(int id)
+        {
+            int optionsCount = 0;
+
+            GUILayout.BeginVertical();
+
+            showPartSelectorButton();
+
+            scrollPos = GUILayout.BeginScrollView(scrollPos);
+
+            if (showPartSelector)
+            {
+                optionsCount = showParts();
+            }
+            else
+            {
+                if (currentPart != null)
+                {
+                    optionsCount = showOptions();
+                }
+                else
+                {
+                    GUILayout.Label("Please select a part");
+                }
+            }
+
+            if (optionsCount == 0)
+            {
+                GUILayout.Label("Nothing to display.");
+            }
+
+            GUILayout.EndScrollView();
+            GUILayout.Space(2f);
+            showSettings();
+
+            GUILayout.EndVertical();
+
+            // Create resize button in bottom right corner
+            if (GUI.RepeatButton(new Rect(windowRect.width - 23, windowRect.height - 23, 20, 20), "", resizeButtonStyle))
+            {
+                resizingWindow = true;
+            }
+
+            GUI.DragWindow(new Rect(0, 0, 10000, 20));
+        }
+
+        // ----------------------------------- Part Selector -------------------------------
         private void getActiveParts()
         {
             // Build list of active parts
@@ -277,7 +332,7 @@ namespace PartCommander
                             {
                                 foreach (BaseField f in pm.Fields)
                                 {
-                                    if (f.guiActive)
+                                    if (f.guiActive && f.guiName != "")
                                     {
                                         // Only include "settable" fields
                                         //if (f.uiControlFlight.GetType().ToString() == "UI_Toggle" || f.uiControlFlight.GetType().ToString() == "UI_FloatRange")
@@ -309,66 +364,6 @@ namespace PartCommander
                 }
             }
             hiddenParts.Clear(); // don't need this anymore, so clear it out
-        }
-
-        public void OnGUI()
-        {
-            if (visibleWindow && visibleUI)
-            {
-                GUI.skin = skin;
-                windowRect = GUILayout.Window(windowId, windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
-            }
-        }
-
-        public void mainWindow(int id)
-        {
-            bool nothing = true;
-
-            GUILayout.BeginVertical();
-
-            showPartSelectorButton();
-
-            scrollPos = GUILayout.BeginScrollView(scrollPos);
-
-            if (showPartSelector)
-            {
-                nothing = showParts(nothing);
-            }
-            else
-            {
-                if (currentPart != null)
-                {
-                    nothing = showOptions(nothing);
-                }
-                else
-                {
-                    GUILayout.Label("Please select a part");
-                }
-            }
-
-            if (nothing)
-            {
-                GUILayout.Label("Nothing to display.");
-            }
-
-            GUILayout.EndScrollView();
-            GUILayout.Space(2f);
-            showSettings();
-
-            GUILayout.EndVertical();
-
-            // Create resize button in bottom right corner
-            if (GUI.RepeatButton(new Rect(windowRect.width - 23, windowRect.height - 23, 20, 20), "", resizeButtonStyle))
-            {
-                resizingWindow = true;
-            }
-
-            GUI.DragWindow(new Rect(0, 0, 10000, 20));
-        }
-
-        private void showSettings()
-        {
-            symLock = GUILayout.Toggle(symLock, "Lock Symmetry");
         }
 
         private void showPartSelectorButton()
@@ -410,25 +405,23 @@ namespace PartCommander
             }
         }
 
-        private bool showParts(bool nothing)
+        private int showParts()
         {
             GUILayout.Space(10f);
-            if (activeParts.Count() > 0)
+
+            foreach (Part p in activeParts)
             {
-                nothing = false;
-                foreach (Part p in activeParts)
+                string partTitle = (symLock && p.symmetryCounterparts.Count() > 0) ? p.partInfo.title + " (x" + (p.symmetryCounterparts.Count() + 1) + ")" : p.partInfo.title;
+                if ((GUILayout.Button(partTitle)) || activeParts.Count() == 1)
                 {
-                    string partTitle = (symLock && p.symmetryCounterparts.Count() > 0) ? p.partInfo.title + " (x" + (p.symmetryCounterparts.Count() + 1) + ")" : p.partInfo.title;
-                    if ((GUILayout.Button(partTitle)) || activeParts.Count() == 1)
-                    {
-                        GameEvents.onPartActionUICreate.Fire(p);
-                        currentPart = p;
-                        showPartSelector = false;
-                    }
-                    partButtonHover(p);
+                    GameEvents.onPartActionUICreate.Fire(p);
+                    currentPart = p;
+                    showPartSelector = false;
                 }
+                partButtonHover(p);
             }
-            return nothing;
+
+            return activeParts.Count();
         }
 
         private void partButtonHover(Part p)
@@ -449,41 +442,112 @@ namespace PartCommander
             }
         }
 
-        private bool showOptions(bool nothing)
+        // ----------------------------------- Selected Part Logic -------------------------
+
+        private int showOptions()
         {
+            int optionsCount = 0;
             string multiEngineMode = getEngineMode(currentPart);
-            nothing = showFields(nothing, multiEngineMode);
-            nothing = showEvents(nothing, multiEngineMode);
-            nothing = showResources(nothing);
-            return nothing;
+            optionsCount += showFields(multiEngineMode);
+            optionsCount += showEvents(multiEngineMode);
+            optionsCount += showResources();
+            return (optionsCount);
         }
 
-        private string getEngineMode(Part p)
+        // Routines for displaying/setting KSPFields
+        private int showFields(string multiEngineMode)
         {
-            string multiEngineMode = null;
-            MultiModeEngine mme = p.GetComponent<MultiModeEngine>();
-            if (mme != null)
+            int fieldCount = 0;
+            foreach (PartModule pm in currentPart.Modules)
             {
-                multiEngineMode = mme.mode;
-            }
-            return multiEngineMode;
-        }
-
-        private bool showResources(bool nothing)
-        {
-            foreach (PartResource pr in currentPart.Resources)
-            {
-                if (pr.isActiveAndEnabled)
+                if (pm.Fields != null)
                 {
-                    GUILayout.Label(pr.resourceName + ": " + string.Format("{0:N2}", Math.Round(pr.amount, 2)) + "/" + string.Format("{0:N2}", pr.maxAmount));
-                    nothing = false;
+                    if (checkEngineMode(multiEngineMode, pm))
+                    {
+                        foreach (BaseField f in pm.Fields)
+                        {
+                            if (f.guiActive && f.guiName != "")
+                            {
+                                fieldCount++;
+
+                                if (f.uiControlFlight.GetType().ToString() == "UI_Toggle")
+                                {
+                                    showToggleField(multiEngineMode, pm, f);
+                                }
+                                else if (f.uiControlFlight.GetType().ToString() == "UI_FloatRange")
+                                {
+                                    showSliderField(multiEngineMode, pm, f);
+
+                                }
+                                else
+                                {
+                                    GUILayout.Label(f.GuiString(f.host));
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            return nothing;
+            return fieldCount;
         }
 
-        private bool showEvents(bool nothing, string multiEngineMode)
+        private void showSliderField(string multiEngineMode, PartModule pm, BaseField f)
         {
+            UI_FloatRange fr = (UI_FloatRange)f.uiControlFlight;
+            GUILayout.Label(f.GuiString(f.host));
+            float curVal = (float)f.GetValue(f.host);
+            curVal = Mathf.Clamp(curVal, fr.minValue, fr.maxValue);
+            curVal = GUILayout.HorizontalSlider(curVal, fr.minValue, fr.maxValue);
+            GUILayout.Space(10f);
+            curVal = Mathf.CeilToInt(curVal / fr.stepIncrement) * fr.stepIncrement;
+            setPartModuleFieldValue(multiEngineMode, symLock, pm, f, curVal);
+        }
+
+        private void showToggleField(string multiEngineMode, PartModule pm, BaseField f)
+        {
+            UI_Toggle t = (UI_Toggle)f.uiControlFlight;
+            bool curVal = (bool)f.GetValue(f.host);
+            string curText = curVal ? t.enabledText : t.disabledText;
+
+            if (GUILayout.Button(f.guiName + ": " + curText))
+            {
+                curVal = !curVal;
+                setPartModuleFieldValue(multiEngineMode, symLock, pm, f, curVal);
+            }
+
+        }
+
+        private void setPartModuleFieldValue<T>(string multiEngineMode, bool symLock, PartModule pm, BaseField f, T curVal)
+        {
+            f.SetValue(curVal, f.host);
+            if (symLock)
+            {
+                foreach (Part symPart in currentPart.symmetryCounterparts)
+                {
+                    foreach (PartModule symPM in symPart.Modules)
+                    {
+                        if (symPM.GetType() == pm.GetType())
+                        {
+                            if (checkEngineMode(multiEngineMode, symPM))
+                            {
+                                foreach (BaseField symF in symPM.Fields)
+                                {
+                                    if (symF.guiActive && f.name == symF.name)
+                                    {
+                                        symF.SetValue(curVal, symF.host);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Routines for displaying KSPEvents
+        private int showEvents(string multiEngineMode)
+        {
+            int eventCount = 0;
             foreach (PartModule pm in currentPart.Modules)
             {
                 if (pm.Events != null)
@@ -494,15 +558,14 @@ namespace PartCommander
                         {
                             if (e.active && e.guiActive)
                             {
-                                nothing = false;
+                                eventCount++;
                                 showEvent(multiEngineMode, pm, e);
                             }
                         }
                     }
                 }
-
             }
-            return nothing;
+            return eventCount;
         }
 
         private void showEvent(string multiEngineMode, PartModule pm, BaseEvent e)
@@ -535,163 +598,90 @@ namespace PartCommander
             }
         }
 
+        // Display Resources
+        private int showResources()
+        {
+            int resourceCount = 0;
+            foreach (PartResource pr in currentPart.Resources)
+            {
+                if (pr.isActiveAndEnabled)
+                {
+                    GUILayout.Label(pr.resourceName + ": " + string.Format("{0:N2}", Math.Round(pr.amount, 2)) + " / " + string.Format("{0:N2}", pr.maxAmount));
+                    resourceCount++;
+                }
+            }
+            return resourceCount;
+        }
+
+        // Display settings
+        private void showSettings()
+        {
+            bool oldSymLock = symLock;
+            symLock = GUILayout.Toggle(symLock, "Lock Symmetry");
+            if (symLock != oldSymLock)
+            {
+                if (currentPart != null)
+                {
+                    // reset part highlighting
+                    clearHighlighting();
+                    setHighlighting(currentPart, true);
+                }
+            }
+        }
+
+        // ----------------------------------- Part Highlighting -----------------------------------
+
+        private void setHighlighting(Part p, bool highlight)
+        {
+            p.SetHighlight(highlight, false);
+            if (symLock)
+            {
+                foreach (Part symPart in p.symmetryCounterparts)
+                {
+                    symPart.SetHighlight(highlight, false);
+                }
+            }
+        }
+
+        private void clearHighlighting()
+        {
+            foreach (Part p in activeParts)
+            {
+                p.SetHighlight(false, false);
+                if (symLock)
+                {
+                    foreach (Part symPart in p.symmetryCounterparts)
+                    {
+                        symPart.SetHighlight(false, false);
+                    }
+                }
+            }
+        }
+
+        // ----------------------------------- Multi-Engine Mode -----------------------------------
+
+        private string getEngineMode(Part p)
+        {
+            string multiEngineMode = null;
+            MultiModeEngine mme = p.GetComponent<MultiModeEngine>();
+            if (mme != null)
+            {
+                multiEngineMode = mme.mode;
+            }
+            return multiEngineMode;
+        }
+
         private static bool checkEngineMode(string multiEngineMode, PartModule pm)
         {
-            bool doIt = true;
-            // Special handling for multi-mode engines (ie R.A.P.I.E.R)
+            bool modeMatches = true;
             ModuleEnginesFX mefx = null;
             if (pm.GetType().ToString() == "ModuleEnginesFX")
             {
                 mefx = (ModuleEnginesFX)pm;
-                doIt = (multiEngineMode == mefx.engineID) ? true : false;
+                modeMatches = (multiEngineMode == mefx.engineID) ? true : false;
             }
-            return doIt;
+            return modeMatches;
         }
 
-        private bool showFields(bool nothing, string multiEngineMode)
-        {
-            foreach (PartModule pm in currentPart.Modules)
-            {
-                if (pm.Fields != null)
-                {
-                    if (checkEngineMode(multiEngineMode, pm))
-                    {
-                        foreach (BaseField f in pm.Fields)
-                        {
-                            if (f.guiActive)
-                            {
-                                nothing = false;
-
-                                if (f.uiControlFlight.GetType().ToString() == "UI_Toggle")
-                                {
-                                    showToggleField(multiEngineMode, pm, f);
-                                }
-                                else if (f.uiControlFlight.GetType().ToString() == "UI_FloatRange")
-                                {
-                                    showSliderField(multiEngineMode, pm, f);
-
-                                }
-                                else
-                                {
-                                    GUILayout.Label(f.GuiString(f.host));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            return nothing;
-        }
-
-        private void showSliderField(string multiEngineMode, PartModule pm, BaseField f)
-        {
-            UI_FloatRange fr = (UI_FloatRange)f.uiControlFlight;
-            GUILayout.Label(f.GuiString(f.host));
-            float curVal = (float)f.GetValue(f.host);
-            curVal = Mathf.Clamp(curVal, fr.minValue, fr.maxValue);
-            curVal = GUILayout.HorizontalSlider(curVal, fr.minValue, fr.maxValue);
-            GUILayout.Space(10f);
-            curVal = Mathf.CeilToInt(curVal / fr.stepIncrement) * fr.stepIncrement;
-            setPartModuleFieldValue(multiEngineMode, symLock, pm, f, curVal);
-        }
-
-        private void setPartModuleFieldValue<T>(string multiEngineMode, bool symLock, PartModule pm, BaseField f, T curVal)
-        {
-            f.SetValue(curVal, f.host);
-            if (symLock)
-            {
-                foreach (Part symPart in currentPart.symmetryCounterparts)
-                {
-                    foreach (PartModule symPM in symPart.Modules)
-                    {
-                        if (symPM.GetType() == pm.GetType())
-                        {
-                            if (checkEngineMode(multiEngineMode, symPM))
-                            {
-                                foreach (BaseField symF in symPM.Fields)
-                                {
-                                    if (symF.guiActive && f.name == symF.name)
-                                    {
-                                        symF.SetValue(curVal, symF.host);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        private void showToggleField(string multiEngineMode, PartModule pm, BaseField f)
-        {
-            UI_Toggle t = (UI_Toggle)f.uiControlFlight;
-            bool curVal = (bool)f.GetValue(f.host);
-            string curText = curVal ? t.enabledText : t.disabledText;
-
-            if (GUILayout.Button(f.guiName + ": " + curText))
-            {
-                curVal = !curVal;
-                setPartModuleFieldValue(multiEngineMode, symLock, pm, f, curVal);
-            }
-
-        }
-
-        protected void OnDestroy()
-        {
-            visibleWindow = false;
-            GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
-            GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
-            removeLauncherButton();
-
-            if (InputLockManager.lockStack.ContainsKey(controlsLockID))
-                InputLockManager.RemoveControlLock(controlsLockID);
-        }
-
-        public static bool loadTexture(ref Texture2D texture, String fileName, String folder = "")
-        {
-            bool textureLoaded = false;
-            try
-            {
-                if (folder == "") folder = texturePath;
-
-                if (System.IO.File.Exists(String.Format("{0}/{1}", folder, fileName)))
-                {
-                    try
-                    {
-                        texture.LoadImage(System.IO.File.ReadAllBytes(String.Format("{0}/{1}", folder, fileName)));
-                        textureLoaded = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        print("[CC] error loading texture " + ex.Message);
-                    }
-                }
-                else
-                {
-                    print("[CC] can't find texture file " + folder + "/" + fileName);
-                }
-
-
-            }
-            catch (Exception ex)
-            {
-                print("[CC] error loading texture " + ex.Message);
-            }
-            return textureLoaded;
-        }
-
-        public void removeLauncherButton()
-        {
-            if (launcherButton != null)
-            {
-                ApplicationLauncher.Instance.RemoveModApplication(launcherButton);
-
-            }
-        }
-
-        public void onSceneChange(GameScenes scene)
-        {
-            removeLauncherButton();
-        }
     }
 }
