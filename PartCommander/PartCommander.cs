@@ -75,6 +75,9 @@ namespace PartCommander
             // Hook into events for Application Launcher
             GameEvents.onGUIApplicationLauncherReady.Add(OnGUIApplicationLauncherReady);
             GameEvents.onGameSceneLoadRequested.Add(onSceneChange);
+
+            // Hook into events for changes
+            GameEvents.onVesselChange.Add(onVesselChange);
         }
 
         public void Start()
@@ -117,6 +120,7 @@ namespace PartCommander
             visibleWindow = false;
             GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
             GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
+            GameEvents.onVesselChange.Remove(onVesselChange);
             removeLauncherButton();
 
             if (InputLockManager.lockStack.ContainsKey(controlsLockID))
@@ -248,9 +252,15 @@ namespace PartCommander
             }
         }
 
+        // ----------------------------------------- Game Event Handlers --------------------------------------------
         public void onSceneChange(GameScenes scene)
         {
             removeLauncherButton();
+        }
+
+        public void onVesselChange(Vessel v)
+        {
+            resetWindow();
         }
 
         // ----------------------------------- Main Window Logic ---------------------------
@@ -276,7 +286,7 @@ namespace PartCommander
                 }
                 else
                 {
-                    GUILayout.Label("Please select a part");
+                    showPartSelector = true;
                 }
             }
 
@@ -298,6 +308,14 @@ namespace PartCommander
             }
 
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
+        }
+
+        public void resetWindow()
+        {
+            activeParts.Clear();
+            hiddenParts.Clear();
+            currentPart = null;
+            showPartSelector = true;
         }
 
         // ----------------------------------- Part Selector -------------------------------
@@ -451,6 +469,7 @@ namespace PartCommander
             optionsCount += showFields(multiEngineMode);
             optionsCount += showEvents(multiEngineMode);
             optionsCount += showResources();
+            showTemperatureInfo();
             return (optionsCount);
         }
 
@@ -611,6 +630,25 @@ namespace PartCommander
                 }
             }
             return resourceCount;
+        }
+
+        // Display Temperature Info
+        private void showTemperatureInfo()
+        {
+            if (PhysicsGlobals.ThermalDataDisplay)
+            {
+                GUILayout.Label("Thermal Mass: " + string.Format("{0:N2}", Math.Round(currentPart.thermalMass, 2)));
+                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(currentPart.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(currentPart.maxTemp)));
+                GUILayout.Label("Temp Ext: " + string.Format("{0:N2}", Math.Round(currentPart.externalTemperature, 2)));
+                GUILayout.Label("Cond Flux: " + string.Format("{0:N2}", Math.Round(currentPart.thermalConductionFlux, 2)));
+                GUILayout.Label("Conv Flux: " + string.Format("{0:N2}", Math.Round(currentPart.thermalConvectionFlux, 2)));
+                GUILayout.Label("Rad Flux: " + string.Format("{0:N2}", Math.Round(currentPart.thermalRadiationFlux, 2)));
+                GUILayout.Label("Int Flux: " + string.Format("{0:N2}", Math.Round(currentPart.thermalInternalFlux, 2)));
+            }
+            else
+            {
+                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(currentPart.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(currentPart.maxTemp)));
+            }
         }
 
         // Display settings

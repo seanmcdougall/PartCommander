@@ -68,8 +68,24 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>cd $(TargetDir)
-"C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\bin\cli.bat"  "C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\lib\mono\4.0\pdb2mdb.exe" $(TargetFileName)</PostBuildEvent>
+    <PostBuildEvent>if $(ConfigurationName) == Debug  goto :Debug
+if $(ConfigurationName) == Release goto :Release
+goto :endIf
+
+:Debug
+echo "Processing Debug post-build"
+"C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\bin\cli.bat"  "C:\Program Files (x86)\Unity\Editor\Data\MonoBleedingEdge\lib\mono\4.0\pdb2mdb.exe" $(TargetFileName)
+goto :endIf
+
+:Release
+echo "Processing Release post-build"
+cd ..\..\
+del releases\$(TargetName)-latest.zip
+7za a -tzip releases\$(TargetName)-latest.zip GameData
+goto :endIf
+
+:endIf
+echo "Done"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
