@@ -32,32 +32,33 @@ namespace PartCommander
         // Public variables
         public GUISkin skin;
         public List<Part> activeParts = new List<Part>();
-        public List<Part> hiddenParts = new List<Part>();
         public int fontSize = 12;
+        public ApplicationLauncherButton launcherButton = null;
+        public bool visibleWindow = false;
 
         // Private variables
-        private bool visibleWindow = false;
+        private PartCommanderWindow currentWindow;
+        private Vector2 scrollPos = new Vector2(0f, 0f);
+
         private bool visibleUI = true;
         private bool resizingWindow = false;
+        private GUIStyle resizeButtonStyle;
 
         private bool togglePartSelector = false;
         private Part selectPart = null;
 
-        private PartCommanderWindow currentWindow;
-
-        private Vector2 scrollPos = new Vector2(0f, 0f);
-
         private bool controlsLocked = false;
-
         private string controlsLockID = "PartCommander_LockID";
-
-        private GUIStyle resizeButtonStyle;
 
         private Texture2D texResizeOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texResizeOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texToolbar = new Texture2D(38, 38, TextureFormat.ARGB32, false);
 
-        private ApplicationLauncherButton launcherButton = null;
+        public static PartCommander Instance { get; private set; }
+        public PartCommander()
+        {
+            Instance = this;
+        }
 
         // ------------------------------- Unity Events --------------------------------
         public void Awake()
@@ -85,19 +86,22 @@ namespace PartCommander
 
         public void Update()
         {
+            // Only proceed if a vessel is active and physics have stablized
             if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel.HoldPhysics == false)
             {
+                // Check to see if we already have a saved window, if not then create a new one
                 if (!PartCommanderScenario.Instance.gameSettings.vesselWindows.ContainsKey(FlightGlobals.ActiveVessel.id))
                 {
                     Debug.Log("[PC] creating window for " + FlightGlobals.ActiveVessel.vesselName + " " + FlightGlobals.ActiveVessel.id);
                     PartCommanderScenario.Instance.gameSettings.vesselWindows.Add(FlightGlobals.ActiveVessel.id, new PartCommanderWindow());
                 }
-
+                // Load the saved window
                 currentWindow = PartCommanderScenario.Instance.gameSettings.vesselWindows[FlightGlobals.ActiveVessel.id];
 
+                // If we don't have a selected part but we do have an id, then resurrect it
                 if (currentWindow.currentPart == null && currentWindow.currentPartId != 0u)
                 {
-                    Debug.Log("[PC] resetting current part from flight ID " + currentWindow.currentPartId);
+                    Debug.Log("[PC] resurrecting current part from flight ID " + currentWindow.currentPartId);
                     foreach (Part p in FlightGlobals.ActiveVessel.Parts)
                     {
                         Debug.Log("[PC] checking " + p.partInfo.title + " " + p.flightID);
@@ -108,15 +112,22 @@ namespace PartCommander
                             break;
                         }
                     }
+                    // If we still don't have a part, then the id must be invalid or the part is gone.  Clear it out.
+                    if (currentWindow.currentPart == null)
+                    {
+                        currentWindow.currentPartId = 0u;
+                    }
                 }
 
+                // The part selector button was clicked in the gui
                 if (togglePartSelector)
                 {
-                    Debug.Log("[PC] doTogglePartSelector");
+                    Debug.Log("[PC] part selector toggled");
                     // toggle part selector
                     currentWindow.showPartSelector = !currentWindow.showPartSelector;
                     if (currentWindow.showPartSelector)
                     {
+                        // Showing part selector now... clear out any selected part info.
                         if (currentWindow.currentPart != null)
                         {
                             GameEvents.onPartActionUIDismiss.Fire(currentWindow.currentPart);
@@ -126,6 +137,7 @@ namespace PartCommander
                     }
                     else
                     {
+                        // Show now have a selected part, but make sure it's not null and turn the part selector back on if it is.
                         if (currentWindow.currentPart == null)
                         {
                             currentWindow.showPartSelector = true;
@@ -134,6 +146,7 @@ namespace PartCommander
                     togglePartSelector = false;
                 }
 
+                // Make sure the selected part still exists and is part of the active vessel, otherwise clear it out and reenable the part selector.
                 if (currentWindow.currentPart != null)
                 {
                     if (currentWindow.currentPart.vessel != FlightGlobals.ActiveVessel)
@@ -145,15 +158,17 @@ namespace PartCommander
                     }
                 }
 
-                handleResize();
+                resizeWindow();
                 windowHover();
                 getActiveParts();
 
+                // If there's only one available part on the vessel, select it automatically.
                 if (currentWindow.showPartSelector && activeParts.Count == 1)
                 {
                     selectPart = activeParts.First();
                 }
 
+                // A part was selected in the gui
                 if (selectPart != null)
                 {
                     if (selectPart.vessel == FlightGlobals.ActiveVessel)
@@ -171,10 +186,12 @@ namespace PartCommander
 
         public void OnGUI()
         {
-            if (visibleWindow && visibleUI && FlightGlobals.ActiveVessel != null && currentWindow != null)
+            // Make sure we have something to show
+            if (PartCommanderScenario.Instance.gameSettings.visibleWindow && visibleUI && FlightGlobals.ActiveVessel != null && currentWindow != null)
             {
                 GUI.skin = skin;
                 currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
+                // Set the default location/size for new windows to be the same as this one
                 PartCommanderScenario.Instance.gameSettings.windowDefaultRect = currentWindow.windowRect;
             }
         }
@@ -188,7 +205,7 @@ namespace PartCommander
         protected void OnDestroy()
         {
             Debug.Log("[PC] onDestroy");
-            visibleWindow = false;
+            PartCommanderScenario.Instance.gameSettings.visibleWindow = false;
             GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
             GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
             removeLauncherButton();
@@ -201,7 +218,7 @@ namespace PartCommander
         // -------------------------------------- Skin/Textures ------------------------------------------
         private void LoadTextures()
         {
-            Debug.Log("[PC] load textures");
+            Debug.Log("[PC] loading textures");
             texResizeOn = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_on", false);
             texResizeOff = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_off", false);
             texToolbar = GameDatabase.Instance.GetTexture("PartCommander/textures/toolbar", false);
@@ -258,31 +275,31 @@ namespace PartCommander
             }
         }
 
-        public void showUI()
+        public void showUI() // triggered on F2
         {
             Debug.Log("[PC] showUI");
             visibleUI = true;
         }
 
-        public void hideUI()
+        public void hideUI() // triggered on F2
         {
             Debug.Log("[PC] hideUI");
             visibleUI = false;
         }
 
-        public void showWindow()
+        public void showWindow()  // triggered by toolbar
         {
             Debug.Log("[PC] showWindow");
-            visibleWindow = true;
+            PartCommanderScenario.Instance.gameSettings.visibleWindow = true;
         }
 
-        public void hideWindow()
+        public void hideWindow() // triggered by toolbar
         {
             Debug.Log("[PC] hideWindow");
-            visibleWindow = false;
+            PartCommanderScenario.Instance.gameSettings.visibleWindow = false;
         }
 
-        private void handleResize()
+        private void resizeWindow()
         {
             if (Input.GetMouseButtonUp(0))
             {
@@ -307,7 +324,7 @@ namespace PartCommander
 
             if (controlsLocked)
             {
-                if (visibleUI && visibleWindow && currentWindow.windowRect.Contains(mousePos))
+                if (visibleUI && PartCommanderScenario.Instance.gameSettings.visibleWindow && currentWindow.windowRect.Contains(mousePos))
                 {
                     if (currentWindow.showPartSelector == false && currentWindow.currentPart != null)
                     {
@@ -324,7 +341,7 @@ namespace PartCommander
             }
             else
             {
-                if (visibleUI && visibleWindow && currentWindow.windowRect.Contains(mousePos))
+                if (visibleUI && PartCommanderScenario.Instance.gameSettings.visibleWindow && currentWindow.windowRect.Contains(mousePos))
                 {
                     Debug.Log("[PC] set control lock");
                     InputLockManager.SetControlLock(ControlTypes.CAMERACONTROLS, controlsLockID);
@@ -368,7 +385,8 @@ namespace PartCommander
             {
                 togglePartSelector = true;
             }
-            
+
+            // Main area
             scrollPos = GUILayout.BeginScrollView(scrollPos);
 
             if (currentWindow.showPartSelector)
@@ -377,14 +395,7 @@ namespace PartCommander
             }
             else
             {
-                if (currentWindow.currentPart != null)
-                {
-                    optionsCount = showOptions();
-                }
-                else
-                {
-                    currentWindow.showPartSelector = true;
-                }
+                optionsCount = showOptions();
             }
 
             if (optionsCount == 0)
@@ -395,7 +406,6 @@ namespace PartCommander
             GUILayout.EndScrollView();
             GUILayout.Space(2f);
             showSettings();
-
             GUILayout.EndVertical();
 
             // Create resize button in bottom right corner
@@ -404,6 +414,7 @@ namespace PartCommander
                 resizingWindow = true;
             }
 
+            // Make window draggable by title
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
         }
 
@@ -412,7 +423,7 @@ namespace PartCommander
         {
             // Build list of active parts
             activeParts.Clear();
-            hiddenParts.Clear();
+            List<Part> hiddenParts = new List<Part>();
             foreach (Part p in FlightGlobals.ActiveVessel.Parts)
             {
                 bool includePart = false;
@@ -465,7 +476,6 @@ namespace PartCommander
                     }
                 }
             }
-            hiddenParts.Clear(); // don't need this anymore, so clear it out
         }
 
         private int showParts()
