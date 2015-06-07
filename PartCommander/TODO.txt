@@ -1,0 +1,2 @@
+- clear any active highlighting before switching vessels
+- make window visibility persist

@@ -33,20 +33,20 @@ namespace PartCommander
         public GUISkin skin;
         public List<Part> activeParts = new List<Part>();
         public List<Part> hiddenParts = new List<Part>();
-        public Part currentPart = null;
-        public bool symLock = true;
         public int fontSize = 12;
 
         // Private variables
         private bool visibleWindow = false;
         private bool visibleUI = true;
+        private bool resizingWindow = false;
 
-        private int windowId;
-        private Rect windowRect = new Rect();
+        private bool togglePartSelector = false;
+        private Part selectPart = null;
+
+        private PartCommanderWindow currentWindow;
+
         private Vector2 scrollPos = new Vector2(0f, 0f);
 
-        private bool showPartSelector = true;
-        private bool resizingWindow = false;
         private bool controlsLocked = false;
 
         private string controlsLockID = "PartCommander_LockID";
@@ -59,13 +59,6 @@ namespace PartCommander
 
         private ApplicationLauncherButton launcherButton = null;
 
-        // Default window size
-        // TODO: put this in a config so it remembers between sessions
-        private int windowDefaultX = Screen.width - 270;
-        private int windowDefaultY = Screen.height / 2 - 200;
-        private float windowDefaultWidth = 250f;
-        private float windowDefaultHeight = 400f;
-
         // ------------------------------- Unity Events --------------------------------
         public void Awake()
         {
@@ -75,61 +68,140 @@ namespace PartCommander
             // Hook into events for Application Launcher
             GameEvents.onGUIApplicationLauncherReady.Add(OnGUIApplicationLauncherReady);
             GameEvents.onGameSceneLoadRequested.Add(onSceneChange);
-
-            // Hook into events for changes
-            GameEvents.onVesselChange.Add(onVesselChange);
         }
 
         public void Start()
         {
-            // Setup the window
-            windowRect = new Rect(windowDefaultX, windowDefaultY, windowDefaultWidth, windowDefaultHeight);
-            windowId = GUIUtility.GetControlID(FocusType.Passive);
-
             // Add hooks for showing/hiding on F2
             GameEvents.onShowUI.Add(showUI);
             GameEvents.onHideUI.Add(hideUI);
 
             // Load Application Launcher
-            if (launcherButton == null) 
+            if (launcherButton == null)
             {
                 OnGUIApplicationLauncherReady();
             }
-
         }
 
         public void Update()
         {
-            handleResize();
-            windowHover();
-            getActiveParts();
+            if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel.HoldPhysics == false)
+            {
+                if (!PartCommanderScenario.Instance.gameSettings.vesselWindows.ContainsKey(FlightGlobals.ActiveVessel.id))
+                {
+                    Debug.Log("[PC] creating window for " + FlightGlobals.ActiveVessel.vesselName + " " + FlightGlobals.ActiveVessel.id);
+                    PartCommanderScenario.Instance.gameSettings.vesselWindows.Add(FlightGlobals.ActiveVessel.id, new PartCommanderWindow());
+                }
 
+                currentWindow = PartCommanderScenario.Instance.gameSettings.vesselWindows[FlightGlobals.ActiveVessel.id];
+
+                if (currentWindow.currentPart == null && currentWindow.currentPartId != 0u)
+                {
+                    Debug.Log("[PC] resetting current part from flight ID " + currentWindow.currentPartId);
+                    foreach (Part p in FlightGlobals.ActiveVessel.Parts)
+                    {
+                        Debug.Log("[PC] checking " + p.partInfo.title + " " + p.flightID);
+                        if (p.flightID == currentWindow.currentPartId)
+                        {
+                            Debug.Log("[PC] found it!");
+                            currentWindow.currentPart = p;
+                            break;
+                        }
+                    }
+                }
+
+                if (togglePartSelector)
+                {
+                    Debug.Log("[PC] doTogglePartSelector");
+                    // toggle part selector
+                    currentWindow.showPartSelector = !currentWindow.showPartSelector;
+                    if (currentWindow.showPartSelector)
+                    {
+                        if (currentWindow.currentPart != null)
+                        {
+                            GameEvents.onPartActionUIDismiss.Fire(currentWindow.currentPart);
+                        }
+                        currentWindow.currentPart = null;
+                        currentWindow.currentPartId = 0u;
+                    }
+                    else
+                    {
+                        if (currentWindow.currentPart == null)
+                        {
+                            currentWindow.showPartSelector = true;
+                        }
+                    }
+                    togglePartSelector = false;
+                }
+
+                if (currentWindow.currentPart != null)
+                {
+                    if (currentWindow.currentPart.vessel != FlightGlobals.ActiveVessel)
+                    {
+                        Debug.Log("[PC] clearing out active part");
+                        currentWindow.currentPart = null;
+                        currentWindow.currentPartId = 0u;
+                        currentWindow.showPartSelector = true;
+                    }
+                }
+
+                handleResize();
+                windowHover();
+                getActiveParts();
+
+                if (currentWindow.showPartSelector && activeParts.Count == 1)
+                {
+                    selectPart = activeParts.First();
+                }
+
+                if (selectPart != null)
+                {
+                    if (selectPart.vessel == FlightGlobals.ActiveVessel)
+                    {
+                        GameEvents.onPartActionUICreate.Fire(selectPart);
+                        currentWindow.currentPart = selectPart;
+                        currentWindow.currentPartId = selectPart.flightID;
+                        currentWindow.showPartSelector = false;
+                    }
+                    selectPart = null;
+                }
+
+            }
         }
 
         public void OnGUI()
         {
-            if (visibleWindow && visibleUI)
+            if (visibleWindow && visibleUI && FlightGlobals.ActiveVessel != null && currentWindow != null)
             {
                 GUI.skin = skin;
-                windowRect = GUILayout.Window(windowId, windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
+                currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
+                PartCommanderScenario.Instance.gameSettings.windowDefaultRect = currentWindow.windowRect;
             }
+        }
+
+        public void onSceneChange(GameScenes scene)
+        {
+            Debug.Log("[PC] onSceneChange");
+            removeLauncherButton();
         }
 
         protected void OnDestroy()
         {
+            Debug.Log("[PC] onDestroy");
             visibleWindow = false;
             GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
             GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
-            GameEvents.onVesselChange.Remove(onVesselChange);
             removeLauncherButton();
 
             if (InputLockManager.lockStack.ContainsKey(controlsLockID))
+                Debug.Log("[PC] remove control lock");
                 InputLockManager.RemoveControlLock(controlsLockID);
         }
 
         // -------------------------------------- Skin/Textures ------------------------------------------
         private void LoadTextures()
         {
+            Debug.Log("[PC] load textures");
             texResizeOn = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_on", false);
             texResizeOff = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_off", false);
             texToolbar = GameDatabase.Instance.GetTexture("PartCommander/textures/toolbar", false);
@@ -137,6 +209,7 @@ namespace PartCommander
 
         private GUISkin SetupSkin()
         {
+            Debug.Log("[PC] SetupSkin");
             // Setup skin
             GUISkin skin = GameObject.Instantiate(HighLogic.Skin) as GUISkin;
 
@@ -177,29 +250,35 @@ namespace PartCommander
         // ------------------------------------------ Application Launcher / UI ---------------------------------------
         private void OnGUIApplicationLauncherReady()
         {
+            Debug.Log("[PC] OnGUIApplicationLauncherReady");
             if (launcherButton == null)
             {
+                Debug.Log("[PC] AddModApplication");
                 launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, texToolbar);
             }
         }
 
         public void showUI()
         {
+            Debug.Log("[PC] showUI");
             visibleUI = true;
         }
 
         public void hideUI()
         {
+            Debug.Log("[PC] hideUI");
             visibleUI = false;
         }
 
         public void showWindow()
         {
+            Debug.Log("[PC] showWindow");
             visibleWindow = true;
         }
 
         public void hideWindow()
         {
+            Debug.Log("[PC] hideWindow");
             visibleWindow = false;
         }
 
@@ -212,10 +291,11 @@ namespace PartCommander
 
             if (resizingWindow)
             {
-                windowRect.width = Input.mousePosition.x - windowRect.x + 10;
-                windowRect.width = windowRect.width < 150 ? 150 : windowRect.width;
-                windowRect.height = (Screen.height - Input.mousePosition.y) - windowRect.y + 10;
-                windowRect.height = windowRect.height < 200 ? 200 : windowRect.height;
+                Debug.Log("[PC] resizing");
+                currentWindow.windowRect.width = Input.mousePosition.x - currentWindow.windowRect.x + 10;
+                currentWindow.windowRect.width = currentWindow.windowRect.width < 150 ? 150 : currentWindow.windowRect.width;
+                currentWindow.windowRect.height = (Screen.height - Input.mousePosition.y) - currentWindow.windowRect.y + 10;
+                currentWindow.windowRect.height = currentWindow.windowRect.height < 200 ? 200 : currentWindow.windowRect.height;
             }
         }
 
@@ -224,44 +304,51 @@ namespace PartCommander
             // Lock camera controls when over window
             Vector2 mousePos = Input.mousePosition;
             mousePos.y = Screen.height - mousePos.y;
-            if (windowRect.Contains(mousePos) && !controlsLocked)
-            {
-                //TODO: also need to block camera controls in IVA
-                InputLockManager.SetControlLock(ControlTypes.CAMERACONTROLS, controlsLockID);
-                controlsLocked = true;
 
-                if (currentPart != null && showPartSelector == false)
+            if (controlsLocked)
+            {
+                if (visibleUI && visibleWindow && currentWindow.windowRect.Contains(mousePos))
                 {
-                    setHighlighting(currentPart, true);
+                    if (currentWindow.showPartSelector == false && currentWindow.currentPart != null)
+                    {
+                        setHighlighting(currentWindow.currentPart, true);
+                    }
+                }
+                else
+                {
+                    Debug.Log("[PC] remove control lock");
+                    InputLockManager.RemoveControlLock(controlsLockID);
+                    controlsLocked = false;
+                    clearHighlighting();
                 }
             }
-            else if (!windowRect.Contains(mousePos) && controlsLocked)
+            else
             {
-                InputLockManager.RemoveControlLock(controlsLockID);
-                controlsLocked = false;
-                clearHighlighting();
+                if (visibleUI && visibleWindow && currentWindow.windowRect.Contains(mousePos))
+                {
+                    Debug.Log("[PC] set control lock");
+                    InputLockManager.SetControlLock(ControlTypes.CAMERACONTROLS, controlsLockID);
+                    controlsLocked = true;
+
+                    if (currentWindow.showPartSelector == false && currentWindow.currentPart != null)
+                    {
+                        setHighlighting(currentWindow.currentPart, true);
+                    }
+                }
             }
         }
 
         public void removeLauncherButton()
         {
+            Debug.Log("[PC] removeLauncherButton");
             if (launcherButton != null)
             {
+                Debug.Log("[PC] removeModApplication");
                 ApplicationLauncher.Instance.RemoveModApplication(launcherButton);
-
             }
         }
 
-        // ----------------------------------------- Game Event Handlers --------------------------------------------
-        public void onSceneChange(GameScenes scene)
-        {
-            removeLauncherButton();
-        }
 
-        public void onVesselChange(Vessel v)
-        {
-            resetWindow();
-        }
 
         // ----------------------------------- Main Window Logic ---------------------------
         public void mainWindow(int id)
@@ -270,23 +357,33 @@ namespace PartCommander
 
             GUILayout.BeginVertical();
 
-            showPartSelectorButton();
+            // Part selector button
+            string partSelectorLabel = "--Select a Part--";
+            if (currentWindow.currentPart != null)
+            {
+                partSelectorLabel = (currentWindow.symLock && currentWindow.currentPart.symmetryCounterparts.Count() > 0) ? currentWindow.currentPart.partInfo.title + " (x" + (currentWindow.currentPart.symmetryCounterparts.Count() + 1) + ")" : currentWindow.currentPart.partInfo.title;
+            }
 
+            if (GUILayout.Button(partSelectorLabel))
+            {
+                togglePartSelector = true;
+            }
+            
             scrollPos = GUILayout.BeginScrollView(scrollPos);
 
-            if (showPartSelector)
+            if (currentWindow.showPartSelector)
             {
                 optionsCount = showParts();
             }
             else
             {
-                if (currentPart != null)
+                if (currentWindow.currentPart != null)
                 {
                     optionsCount = showOptions();
                 }
                 else
                 {
-                    showPartSelector = true;
+                    currentWindow.showPartSelector = true;
                 }
             }
 
@@ -302,20 +399,12 @@ namespace PartCommander
             GUILayout.EndVertical();
 
             // Create resize button in bottom right corner
-            if (GUI.RepeatButton(new Rect(windowRect.width - 23, windowRect.height - 23, 20, 20), "", resizeButtonStyle))
+            if (GUI.RepeatButton(new Rect(currentWindow.windowRect.width - 23, currentWindow.windowRect.height - 23, 20, 20), "", resizeButtonStyle))
             {
                 resizingWindow = true;
             }
 
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
-        }
-
-        public void resetWindow()
-        {
-            activeParts.Clear();
-            hiddenParts.Clear();
-            currentPart = null;
-            showPartSelector = true;
         }
 
         // ----------------------------------- Part Selector -------------------------------
@@ -330,7 +419,7 @@ namespace PartCommander
                 if (!hiddenParts.Contains(p))
                 {
                     // Hide other members of the symmetry
-                    if (symLock)
+                    if (currentWindow.symLock)
                     {
                         foreach (Part symPart in p.symmetryCounterparts)
                         {
@@ -352,13 +441,8 @@ namespace PartCommander
                                 {
                                     if (f.guiActive && f.guiName != "")
                                     {
-                                        // Only include "settable" fields
-                                        //if (f.uiControlFlight.GetType().ToString() == "UI_Toggle" || f.uiControlFlight.GetType().ToString() == "UI_FloatRange")
-                                        //{
-
                                         includePart = true;
                                         break;
-                                        //}
                                     }
                                 }
                                 if (!includePart)
@@ -384,80 +468,34 @@ namespace PartCommander
             hiddenParts.Clear(); // don't need this anymore, so clear it out
         }
 
-        private void showPartSelectorButton()
-        {
-            string partSelectorLabel = "--Select a Part--";
-            if (currentPart != null)
-            {
-                if (currentPart.vessel.isActiveVessel)
-                {
-                    partSelectorLabel = currentPart.partInfo.title;
-                }
-                else
-                {
-                    GameEvents.onPartActionUIDismiss.Fire(currentPart);
-                    currentPart = null;
-                    showPartSelector = true;
-                }
-            }
-
-            if (GUILayout.Button(partSelectorLabel))
-            {
-                // toggle part selector
-                showPartSelector = !showPartSelector;
-                if (showPartSelector)
-                {
-                    if (currentPart != null)
-                    {
-                        GameEvents.onPartActionUIDismiss.Fire(currentPart);
-                    }
-                    currentPart = null;
-                }
-                else
-                {
-                    if (currentPart == null)
-                    {
-                        showPartSelector = true;
-                    }
-                }
-            }
-        }
-
         private int showParts()
         {
             GUILayout.Space(10f);
 
             foreach (Part p in activeParts)
             {
-                string partTitle = (symLock && p.symmetryCounterparts.Count() > 0) ? p.partInfo.title + " (x" + (p.symmetryCounterparts.Count() + 1) + ")" : p.partInfo.title;
-                if ((GUILayout.Button(partTitle)) || activeParts.Count() == 1)
+                string partTitle = (currentWindow.symLock && p.symmetryCounterparts.Count() > 0) ? p.partInfo.title + " (x" + (p.symmetryCounterparts.Count() + 1) + ")" : p.partInfo.title;
+                if (GUILayout.Button(partTitle))
                 {
-                    GameEvents.onPartActionUICreate.Fire(p);
-                    currentPart = p;
-                    showPartSelector = false;
+                    selectPart = p;
                 }
-                partButtonHover(p);
-            }
-
-            return activeParts.Count();
-        }
-
-        private void partButtonHover(Part p)
-        {
-            if (Event.current.type == EventType.Repaint)
-            {
-                if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                if (Event.current.type == EventType.Repaint)
                 {
-                    setHighlighting(p, true);
-                }
-                else
-                {
-                    if (controlsLocked)
+                    if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
                     {
-                        setHighlighting(p, false);
+                        setHighlighting(p, true);
+                    }
+                    else
+                    {
+                        if (controlsLocked)
+                        {
+                            setHighlighting(p, false);
+                        }
                     }
                 }
             }
+
+            return activeParts.Count();
         }
 
         // ----------------------------------- Selected Part Logic -------------------------
@@ -465,7 +503,7 @@ namespace PartCommander
         private int showOptions()
         {
             int optionsCount = 0;
-            string multiEngineMode = getEngineMode(currentPart);
+            string multiEngineMode = getEngineMode(currentWindow.currentPart);
             optionsCount += showFields(multiEngineMode);
             optionsCount += showEvents(multiEngineMode);
             optionsCount += showResources();
@@ -477,7 +515,7 @@ namespace PartCommander
         private int showFields(string multiEngineMode)
         {
             int fieldCount = 0;
-            foreach (PartModule pm in currentPart.Modules)
+            foreach (PartModule pm in currentWindow.currentPart.Modules)
             {
                 if (pm.Fields != null)
                 {
@@ -519,7 +557,7 @@ namespace PartCommander
             curVal = GUILayout.HorizontalSlider(curVal, fr.minValue, fr.maxValue);
             GUILayout.Space(10f);
             curVal = Mathf.CeilToInt(curVal / fr.stepIncrement) * fr.stepIncrement;
-            setPartModuleFieldValue(multiEngineMode, symLock, pm, f, curVal);
+            setPartModuleFieldValue(multiEngineMode, currentWindow.symLock, pm, f, curVal);
         }
 
         private void showToggleField(string multiEngineMode, PartModule pm, BaseField f)
@@ -531,7 +569,7 @@ namespace PartCommander
             if (GUILayout.Button(f.guiName + ": " + curText))
             {
                 curVal = !curVal;
-                setPartModuleFieldValue(multiEngineMode, symLock, pm, f, curVal);
+                setPartModuleFieldValue(multiEngineMode, currentWindow.symLock, pm, f, curVal);
             }
 
         }
@@ -541,7 +579,7 @@ namespace PartCommander
             f.SetValue(curVal, f.host);
             if (symLock)
             {
-                foreach (Part symPart in currentPart.symmetryCounterparts)
+                foreach (Part symPart in currentWindow.currentPart.symmetryCounterparts)
                 {
                     foreach (PartModule symPM in symPart.Modules)
                     {
@@ -567,7 +605,7 @@ namespace PartCommander
         private int showEvents(string multiEngineMode)
         {
             int eventCount = 0;
-            foreach (PartModule pm in currentPart.Modules)
+            foreach (PartModule pm in currentWindow.currentPart.Modules)
             {
                 if (pm.Events != null)
                 {
@@ -592,9 +630,9 @@ namespace PartCommander
             if (GUILayout.Button(e.guiName))
             {
                 e.Invoke();
-                if (symLock)
+                if (currentWindow.symLock)
                 {
-                    foreach (Part symPart in currentPart.symmetryCounterparts)
+                    foreach (Part symPart in currentWindow.currentPart.symmetryCounterparts)
                     {
                         foreach (PartModule symPM in symPart.Modules)
                         {
@@ -621,7 +659,7 @@ namespace PartCommander
         private int showResources()
         {
             int resourceCount = 0;
-            foreach (PartResource pr in currentPart.Resources)
+            foreach (PartResource pr in currentWindow.currentPart.Resources)
             {
                 if (pr.isActiveAndEnabled)
                 {
@@ -637,32 +675,32 @@ namespace PartCommander
         {
             if (PhysicsGlobals.ThermalDataDisplay)
             {
-                GUILayout.Label("Thermal Mass: " + string.Format("{0:N2}", Math.Round(currentPart.thermalMass, 2)));
-                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(currentPart.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(currentPart.maxTemp)));
-                GUILayout.Label("Temp Ext: " + string.Format("{0:N2}", Math.Round(currentPart.externalTemperature, 2)));
-                GUILayout.Label("Cond Flux: " + string.Format("{0:N2}", Math.Round(currentPart.thermalConductionFlux, 2)));
-                GUILayout.Label("Conv Flux: " + string.Format("{0:N2}", Math.Round(currentPart.thermalConvectionFlux, 2)));
-                GUILayout.Label("Rad Flux: " + string.Format("{0:N2}", Math.Round(currentPart.thermalRadiationFlux, 2)));
-                GUILayout.Label("Int Flux: " + string.Format("{0:N2}", Math.Round(currentPart.thermalInternalFlux, 2)));
+                GUILayout.Label("Thermal Mass: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalMass, 2)));
+                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.maxTemp)));
+                GUILayout.Label("Temp Ext: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.externalTemperature, 2)));
+                GUILayout.Label("Cond Flux: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalConductionFlux, 2)));
+                GUILayout.Label("Conv Flux: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalConvectionFlux, 2)));
+                GUILayout.Label("Rad Flux: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalRadiationFlux, 2)));
+                GUILayout.Label("Int Flux: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalInternalFlux, 2)));
             }
             else
             {
-                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(currentPart.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(currentPart.maxTemp)));
+                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.maxTemp)));
             }
         }
 
         // Display settings
         private void showSettings()
         {
-            bool oldSymLock = symLock;
-            symLock = GUILayout.Toggle(symLock, "Lock Symmetry");
-            if (symLock != oldSymLock)
+            bool oldSymLock = currentWindow.symLock;
+            currentWindow.symLock = GUILayout.Toggle(currentWindow.symLock, "Lock Symmetry");
+            if (currentWindow.symLock != oldSymLock)
             {
-                if (currentPart != null)
+                if (currentWindow.currentPart != null)
                 {
                     // reset part highlighting
                     clearHighlighting();
-                    setHighlighting(currentPart, true);
+                    setHighlighting(currentWindow.currentPart, true);
                 }
             }
         }
@@ -672,7 +710,7 @@ namespace PartCommander
         private void setHighlighting(Part p, bool highlight)
         {
             p.SetHighlight(highlight, false);
-            if (symLock)
+            if (currentWindow.symLock)
             {
                 foreach (Part symPart in p.symmetryCounterparts)
                 {
@@ -685,14 +723,7 @@ namespace PartCommander
         {
             foreach (Part p in activeParts)
             {
-                p.SetHighlight(false, false);
-                if (symLock)
-                {
-                    foreach (Part symPart in p.symmetryCounterparts)
-                    {
-                        symPart.SetHighlight(false, false);
-                    }
-                }
+                setHighlighting(p, false);
             }
         }
 
