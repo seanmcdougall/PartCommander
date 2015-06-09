@@ -147,8 +147,11 @@ namespace PartCommander
                 }
 
                 // Make sure the selected part still exists and is part of the active vessel, otherwise clear it out and reenable the part selector.
-                if (currentWindow.currentPart != null)
+                if (currentWindow.currentPart == null)
                 {
+                    currentWindow.showPartSelector = true;
+                    currentWindow.currentPartId = 0u;
+                } else {
                     if (currentWindow.currentPart.vessel != FlightGlobals.ActiveVessel)
                     {
                         Debug.Log("[PC] clearing out active part");
