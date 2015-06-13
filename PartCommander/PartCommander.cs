@@ -151,7 +151,9 @@ namespace PartCommander
                 {
                     currentWindow.showPartSelector = true;
                     currentWindow.currentPartId = 0u;
-                } else {
+                }
+                else
+                {
                     if (currentWindow.currentPart.vessel != FlightGlobals.ActiveVessel)
                     {
                         Debug.Log("[PC] clearing out active part");
@@ -190,12 +192,26 @@ namespace PartCommander
         public void OnGUI()
         {
             // Make sure we have something to show
-            if (PartCommanderScenario.Instance.gameSettings.visibleWindow && visibleUI && FlightGlobals.ActiveVessel != null && currentWindow != null)
+
+            if (visibleUI)
             {
-                GUI.skin = skin;
-                currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
-                // Set the default location/size for new windows to be the same as this one
-                PartCommanderScenario.Instance.gameSettings.windowDefaultRect = currentWindow.windowRect;
+                if (FlightGlobals.ActiveVessel != null)
+                {
+                    if (currentWindow != null)
+                    {
+                        if (PartCommanderScenario.Instance != null)
+                        {
+                            if (PartCommanderScenario.Instance.gameSettings.visibleWindow)
+                            {
+                                GUI.skin = skin;
+                                currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
+                                // Set the default location/size for new windows to be the same as this one
+                                PartCommanderScenario.Instance.gameSettings.windowDefaultRect = currentWindow.windowRect;
+                            }
+                        }
+
+                    }
+                }
             }
         }
 
@@ -215,7 +231,7 @@ namespace PartCommander
 
             if (InputLockManager.lockStack.ContainsKey(controlsLockID))
                 Debug.Log("[PC] remove control lock");
-                InputLockManager.RemoveControlLock(controlsLockID);
+            InputLockManager.RemoveControlLock(controlsLockID);
         }
 
         // -------------------------------------- Skin/Textures ------------------------------------------
