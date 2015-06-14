@@ -43,6 +43,7 @@ namespace PartCommander
         private bool visibleUI = true;
         private bool resizingWindow = false;
         private GUIStyle resizeButtonStyle;
+        private GUIStyle symLockButtonStyle;
 
         private bool togglePartSelector = false;
         private Part selectPart = null;
@@ -53,6 +54,8 @@ namespace PartCommander
         private Texture2D texResizeOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texResizeOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texToolbar = new Texture2D(38, 38, TextureFormat.ARGB32, false);
+        private Texture2D texSymLockOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
+        private Texture2D texSymLockOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
 
         public static PartCommander Instance { get; private set; }
         public PartCommander()
@@ -241,6 +244,8 @@ namespace PartCommander
             texResizeOn = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_on", false);
             texResizeOff = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_off", false);
             texToolbar = GameDatabase.Instance.GetTexture("PartCommander/textures/toolbar", false);
+            texSymLockOn = GameDatabase.Instance.GetTexture("PartCommander/textures/symlock_on", false);
+            texSymLockOff = GameDatabase.Instance.GetTexture("PartCommander/textures/symlock_off", false);
         }
 
         private GUISkin SetupSkin()
@@ -279,6 +284,15 @@ namespace PartCommander
             resizeButtonStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
             resizeButtonStyle.normal.background = texResizeOff;
             resizeButtonStyle.hover.background = texResizeOn;
+
+            symLockButtonStyle = new GUIStyle();
+            symLockButtonStyle.name = "symLockButton";
+            symLockButtonStyle.padding = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
+            symLockButtonStyle.border = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
+            symLockButtonStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
+            symLockButtonStyle.normal.background = texSymLockOff;
+            symLockButtonStyle.onNormal.background = texSymLockOn;
+            symLockButtonStyle.hover.background = texSymLockOn;
 
             return (skin);
         }
@@ -423,15 +437,10 @@ namespace PartCommander
             }
 
             GUILayout.EndScrollView();
-            GUILayout.Space(2f);
-            showSettings();
+            GUILayout.Space(30f);
             GUILayout.EndVertical();
 
-            // Create resize button in bottom right corner
-            if (GUI.RepeatButton(new Rect(currentWindow.windowRect.width - 23, currentWindow.windowRect.height - 23, 20, 20), "", resizeButtonStyle))
-            {
-                resizingWindow = true;
-            }
+            showSettings();
 
             // Make window draggable by title
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
@@ -722,7 +731,7 @@ namespace PartCommander
         private void showSettings()
         {
             bool oldSymLock = currentWindow.symLock;
-            currentWindow.symLock = GUILayout.Toggle(currentWindow.symLock, "Lock Symmetry");
+            currentWindow.symLock = GUI.Toggle(new Rect(3,currentWindow.windowRect.height - 23, 20, 20), currentWindow.symLock, "", symLockButtonStyle);
             if (currentWindow.symLock != oldSymLock)
             {
                 if (currentWindow.currentPart != null)
@@ -731,6 +740,12 @@ namespace PartCommander
                     clearHighlighting();
                     setHighlighting(currentWindow.currentPart, true);
                 }
+            }
+
+            // Create resize button in bottom right corner
+            if (GUI.RepeatButton(new Rect(currentWindow.windowRect.width - 23, currentWindow.windowRect.height - 23, 20, 20), "", resizeButtonStyle))
+            {
+                resizingWindow = true;
             }
         }
 

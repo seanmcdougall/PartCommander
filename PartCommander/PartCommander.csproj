@@ -67,6 +67,12 @@
     <Content Include="textures\resize_on.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="textures\symlock_off.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\symlock_on.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="textures\toolbar.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
