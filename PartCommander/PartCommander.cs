@@ -42,8 +42,7 @@ namespace PartCommander
 
         private bool visibleUI = true;
         private bool resizingWindow = false;
-        private GUIStyle resizeButtonStyle;
-        private GUIStyle symLockButtonStyle;
+        
 
         private bool togglePartSelector = false;
         private Part selectPart = null;
@@ -51,11 +50,17 @@ namespace PartCommander
         private bool controlsLocked = false;
         private string controlsLockID = "PartCommander_LockID";
 
+
+        private GUIStyle resizeButtonStyle;
+        private GUIStyle symLockButtonStyle;
+        private GUIStyle azButtonStyle;
         private Texture2D texResizeOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texResizeOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texToolbar = new Texture2D(38, 38, TextureFormat.ARGB32, false);
         private Texture2D texSymLockOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
         private Texture2D texSymLockOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
+        private Texture2D texAzOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
+        private Texture2D texAzOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
 
         public static PartCommander Instance { get; private set; }
         public PartCommander()
@@ -246,6 +251,8 @@ namespace PartCommander
             texToolbar = GameDatabase.Instance.GetTexture("PartCommander/textures/toolbar", false);
             texSymLockOn = GameDatabase.Instance.GetTexture("PartCommander/textures/symlock_on", false);
             texSymLockOff = GameDatabase.Instance.GetTexture("PartCommander/textures/symlock_off", false);
+            texAzOn = GameDatabase.Instance.GetTexture("PartCommander/textures/az_on", false);
+            texAzOff = GameDatabase.Instance.GetTexture("PartCommander/textures/az_off", false);
         }
 
         private GUISkin SetupSkin()
@@ -293,6 +300,15 @@ namespace PartCommander
             symLockButtonStyle.normal.background = texSymLockOff;
             symLockButtonStyle.onNormal.background = texSymLockOn;
             symLockButtonStyle.hover.background = texSymLockOn;
+
+            azButtonStyle = new GUIStyle();
+            azButtonStyle.name = "azButton";
+            azButtonStyle.padding = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
+            azButtonStyle.border = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
+            azButtonStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
+            azButtonStyle.normal.background = texAzOff;
+            azButtonStyle.onNormal.background = texAzOn;
+            azButtonStyle.hover.background = texAzOn;
 
             return (skin);
         }
@@ -503,6 +519,10 @@ namespace PartCommander
                         }
                     }
                 }
+            }
+            if (currentWindow.alphaSort)
+            {
+                activeParts = activeParts.OrderBy(o => o.partInfo.title).ToList();
             }
         }
 
@@ -741,6 +761,9 @@ namespace PartCommander
                     setHighlighting(currentWindow.currentPart, true);
                 }
             }
+
+            // Alpha sort button
+            currentWindow.alphaSort = GUI.Toggle(new Rect(28, currentWindow.windowRect.height - 23, 20, 20), currentWindow.alphaSort, "", azButtonStyle);
 
             // Create resize button in bottom right corner
             if (GUI.RepeatButton(new Rect(currentWindow.windowRect.width - 23, currentWindow.windowRect.height - 23, 20, 20), "", resizeButtonStyle))

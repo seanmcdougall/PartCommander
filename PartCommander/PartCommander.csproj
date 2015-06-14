@@ -61,6 +61,12 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <Content Include="textures\az_off.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\az_on.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="textures\resize_off.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

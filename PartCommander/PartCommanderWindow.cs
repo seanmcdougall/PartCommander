@@ -14,6 +14,7 @@ namespace PartCommander
         public Part currentPart = null;
         public uint currentPartId;
         public bool symLock = true;
+        public bool alphaSort = false;
         public bool showPartSelector = true;
         public int windowId;
 

@@ -48,6 +48,7 @@ namespace PartCommander
                                 Debug.Log("[PC] found it!");
                                 vesselWindows[vesselId] = new PartCommanderWindow(vesselNode.GetValueOrDefault("windowX", windowDefaultX), vesselNode.GetValueOrDefault("windowY", windowDefaultY), vesselNode.GetValueOrDefault("windowWidth", windowDefaultWidth), vesselNode.GetValueOrDefault("windowHeight", windowDefaultHeight));
                                 vesselWindows[vesselId].symLock = vesselNode.GetValueOrDefault("symLock", true);
+                                vesselWindows[vesselId].alphaSort = vesselNode.GetValueOrDefault("alphaSort", false);
                                 vesselWindows[vesselId].showPartSelector = false;
                                 vesselWindows[vesselId].currentPartId = partId;
                                 break;
@@ -95,6 +96,7 @@ namespace PartCommander
                     n.AddValue("windowHeight", vesselWindows[g].windowRect.height);
                     n.AddValue("currentPartId", vesselWindows[g].currentPartId);
                     n.AddValue("symLock", vesselWindows[g].symLock);
+                    n.AddValue("alphaSort", vesselWindows[g].alphaSort);
                 }
             }
         }
