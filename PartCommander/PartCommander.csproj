@@ -58,6 +58,7 @@
     <Compile Include="PartCommanderWindow.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PartCommanderScenario.cs" />
+    <Compile Include="StringExtensions.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

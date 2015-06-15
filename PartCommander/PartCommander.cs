@@ -29,38 +29,27 @@ namespace PartCommander
     [KSPAddon(KSPAddon.Startup.Flight, false)]
     public class PartCommander : MonoBehaviour
     {
-        // Public variables
-        public GUISkin skin;
-        public List<Part> activeParts = new List<Part>();
-        public int fontSize = 12;
-        public ApplicationLauncherButton launcherButton = null;
-        public bool visibleWindow = false;
+        internal ApplicationLauncherButton launcherButton = null;
 
-        // Private variables
+        private int fontSize = 12;
+        private GUISkin skin;
+        private GUIStyle resizeButtonStyle;
+        private GUIStyle symLockButtonStyle;
+        private GUIStyle azButtonStyle;
+
+        private bool togglePartSelector = false;
+        private Part selectPart = null;
+        private List<Part> activeParts = new List<Part>();
+        private string partFilter = "";
+
         private PartCommanderWindow currentWindow;
         private Vector2 scrollPos = new Vector2(0f, 0f);
 
         private bool visibleUI = true;
         private bool resizingWindow = false;
         
-
-        private bool togglePartSelector = false;
-        private Part selectPart = null;
-
         private bool controlsLocked = false;
         private string controlsLockID = "PartCommander_LockID";
-
-
-        private GUIStyle resizeButtonStyle;
-        private GUIStyle symLockButtonStyle;
-        private GUIStyle azButtonStyle;
-        private Texture2D texResizeOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
-        private Texture2D texResizeOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
-        private Texture2D texToolbar = new Texture2D(38, 38, TextureFormat.ARGB32, false);
-        private Texture2D texSymLockOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
-        private Texture2D texSymLockOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
-        private Texture2D texAzOn = new Texture2D(20, 20, TextureFormat.ARGB32, false);
-        private Texture2D texAzOff = new Texture2D(20, 20, TextureFormat.ARGB32, false);
 
         public static PartCommander Instance { get; private set; }
         public PartCommander()
@@ -71,7 +60,6 @@ namespace PartCommander
         // ------------------------------- Unity Events --------------------------------
         public void Awake()
         {
-            LoadTextures();
             skin = SetupSkin();
 
             // Hook into events for Application Launcher
@@ -176,7 +164,7 @@ namespace PartCommander
                 getActiveParts();
 
                 // If there's only one available part on the vessel, select it automatically.
-                if (currentWindow.showPartSelector && activeParts.Count == 1)
+                if (currentWindow.showPartSelector && activeParts.Count == 1 && partFilter == "")
                 {
                     selectPart = activeParts.First();
                 }
@@ -190,6 +178,7 @@ namespace PartCommander
                         currentWindow.currentPart = selectPart;
                         currentWindow.currentPartId = selectPart.flightID;
                         currentWindow.showPartSelector = false;
+                        partFilter = "";
                     }
                     selectPart = null;
                 }
@@ -243,16 +232,30 @@ namespace PartCommander
         }
 
         // -------------------------------------- Skin/Textures ------------------------------------------
-        private void LoadTextures()
+        private Texture2D GetImage(String path, int width, int height)
         {
-            Debug.Log("[PC] loading textures");
-            texResizeOn = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_on", false);
-            texResizeOff = GameDatabase.Instance.GetTexture("PartCommander/textures/resize_off", false);
-            texToolbar = GameDatabase.Instance.GetTexture("PartCommander/textures/toolbar", false);
-            texSymLockOn = GameDatabase.Instance.GetTexture("PartCommander/textures/symlock_on", false);
-            texSymLockOff = GameDatabase.Instance.GetTexture("PartCommander/textures/symlock_off", false);
-            texAzOn = GameDatabase.Instance.GetTexture("PartCommander/textures/az_on", false);
-            texAzOff = GameDatabase.Instance.GetTexture("PartCommander/textures/az_off", false);
+            Texture2D img = new Texture2D(width, height, TextureFormat.ARGB32, false);
+            img = GameDatabase.Instance.GetTexture(path, false);
+            return img;
+        }
+
+        private GUIStyle GetToggleButtonStyle(string styleName,int width,int height)
+        {
+            GUIStyle myStyle = new GUIStyle();
+            Texture2D styleOff = GetImage("PartCommander/textures/" + styleName + "_off", width, height);
+            Texture2D styleOn = GetImage("PartCommander/textures/" + styleName + "_on", width, height);
+
+            myStyle.name = styleName+"Button";
+            myStyle.padding = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
+            myStyle.border = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
+            myStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
+            myStyle.normal.background = styleOff;
+            myStyle.onNormal.background = styleOn;
+            myStyle.hover.background = styleOn;
+            myStyle.active.background = styleOn;
+            myStyle.fixedWidth = width;
+            myStyle.fixedHeight = height;
+            return myStyle;
         }
 
         private GUISkin SetupSkin()
@@ -264,13 +267,6 @@ namespace PartCommander
             skin.button.padding = new RectOffset() { left = 1, right = 1, top = 3, bottom = 2 };
             skin.button.wordWrap = true;
             skin.button.fontSize = fontSize;
-
-            skin.toggle.border.top = skin.toggle.border.bottom = skin.toggle.border.left = skin.toggle.border.right = 0;
-            skin.toggle.margin = new RectOffset(5, 0, 0, 0);
-            skin.toggle.padding = new RectOffset() { left = 5, top = 3, right = 3, bottom = 3 };
-            skin.toggle.fontSize = fontSize;
-
-            skin.horizontalSlider.margin = new RectOffset();
 
             skin.label.padding.top = 0;
             skin.label.fontSize = fontSize;
@@ -284,32 +280,10 @@ namespace PartCommander
             skin.window.padding.left = skin.window.padding.right = skin.window.padding.bottom = 2;
             skin.window.fontSize = (fontSize + 2);
 
-            resizeButtonStyle = new GUIStyle();
-            resizeButtonStyle.name = "resizeButton";
-            resizeButtonStyle.padding = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
-            resizeButtonStyle.border = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
-            resizeButtonStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
-            resizeButtonStyle.normal.background = texResizeOff;
-            resizeButtonStyle.hover.background = texResizeOn;
-
-            symLockButtonStyle = new GUIStyle();
-            symLockButtonStyle.name = "symLockButton";
-            symLockButtonStyle.padding = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
-            symLockButtonStyle.border = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
-            symLockButtonStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
-            symLockButtonStyle.normal.background = texSymLockOff;
-            symLockButtonStyle.onNormal.background = texSymLockOn;
-            symLockButtonStyle.hover.background = texSymLockOn;
-
-            azButtonStyle = new GUIStyle();
-            azButtonStyle.name = "azButton";
-            azButtonStyle.padding = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
-            azButtonStyle.border = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
-            azButtonStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
-            azButtonStyle.normal.background = texAzOff;
-            azButtonStyle.onNormal.background = texAzOn;
-            azButtonStyle.hover.background = texAzOn;
-
+            resizeButtonStyle = GetToggleButtonStyle("resize", 20, 20);
+            symLockButtonStyle = GetToggleButtonStyle("symlock", 20, 20);
+            azButtonStyle = GetToggleButtonStyle("az", 20, 20);
+            
             return (skin);
         }
 
@@ -320,7 +294,7 @@ namespace PartCommander
             if (launcherButton == null)
             {
                 Debug.Log("[PC] AddModApplication");
-                launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, texToolbar);
+                launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, GetImage("PartCommander/textures/toolbar",38,38));
             }
         }
 
@@ -424,17 +398,15 @@ namespace PartCommander
             GUILayout.BeginVertical();
 
             // Part selector button
-            string partSelectorLabel = "--Select a Part--";
             if (currentWindow.currentPart != null)
             {
-                partSelectorLabel = (currentWindow.symLock && currentWindow.currentPart.symmetryCounterparts.Count() > 0) ? currentWindow.currentPart.partInfo.title + " (x" + (currentWindow.currentPart.symmetryCounterparts.Count() + 1) + ")" : currentWindow.currentPart.partInfo.title;
+                string partSelectorLabel = (currentWindow.symLock && currentWindow.currentPart.symmetryCounterparts.Count() > 0) ? currentWindow.currentPart.partInfo.title + " (x" + (currentWindow.currentPart.symmetryCounterparts.Count() + 1) + ")" : currentWindow.currentPart.partInfo.title;
+                if (GUILayout.Button(partSelectorLabel))
+                {
+                    togglePartSelector = true;
+                }    
             }
-
-            if (GUILayout.Button(partSelectorLabel))
-            {
-                togglePartSelector = true;
-            }
-
+            
             // Main area
             scrollPos = GUILayout.BeginScrollView(scrollPos);
 
@@ -453,10 +425,24 @@ namespace PartCommander
             }
 
             GUILayout.EndScrollView();
-            GUILayout.Space(30f);
+            GUILayout.Space(5f);
+            if (currentWindow.currentPart == null)
+            {
+                GUILayout.BeginHorizontal();
+                partFilter = GUILayout.TextField(partFilter);
+                GUILayout.EndHorizontal();
+                GUILayout.Space(5f);
+            }
+            GUILayout.BeginHorizontal();
+            showSettings();
+            GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
-            showSettings();
+            // Create resize button in bottom right corner
+            if (GUI.RepeatButton(new Rect(currentWindow.windowRect.width - 23, currentWindow.windowRect.height - 23, 20, 20), "", resizeButtonStyle))
+            {
+                resizingWindow = true;
+            }
 
             // Make window draggable by title
             GUI.DragWindow(new Rect(0, 0, 10000, 20));
@@ -520,9 +506,25 @@ namespace PartCommander
                     }
                 }
             }
+            if (partFilter != "")
+            {
+                activeParts = activeParts.FindAll(partMatch);
+            }
             if (currentWindow.alphaSort)
             {
                 activeParts = activeParts.OrderBy(o => o.partInfo.title).ToList();
+            }
+        }
+
+        private bool partMatch(Part p)
+        {
+            if (p.partInfo.title.Contains(partFilter, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -751,7 +753,7 @@ namespace PartCommander
         private void showSettings()
         {
             bool oldSymLock = currentWindow.symLock;
-            currentWindow.symLock = GUI.Toggle(new Rect(3,currentWindow.windowRect.height - 23, 20, 20), currentWindow.symLock, "", symLockButtonStyle);
+            currentWindow.symLock = GUILayout.Toggle(currentWindow.symLock, "", symLockButtonStyle);
             if (currentWindow.symLock != oldSymLock)
             {
                 if (currentWindow.currentPart != null)
@@ -762,14 +764,14 @@ namespace PartCommander
                 }
             }
 
-            // Alpha sort button
-            currentWindow.alphaSort = GUI.Toggle(new Rect(28, currentWindow.windowRect.height - 23, 20, 20), currentWindow.alphaSort, "", azButtonStyle);
+            GUILayout.Space(5f);
 
-            // Create resize button in bottom right corner
-            if (GUI.RepeatButton(new Rect(currentWindow.windowRect.width - 23, currentWindow.windowRect.height - 23, 20, 20), "", resizeButtonStyle))
+            // Alpha sort button
+            if (currentWindow.currentPart == null)
             {
-                resizingWindow = true;
+                currentWindow.alphaSort = GUILayout.Toggle(currentWindow.alphaSort, "", azButtonStyle);
             }
+            
         }
 
         // ----------------------------------- Part Highlighting -----------------------------------
