@@ -36,20 +36,21 @@ namespace PartCommander
         private GUIStyle resizeButtonStyle;
         private GUIStyle symLockButtonStyle;
         private GUIStyle azButtonStyle;
+        private GUIStyle closeButtonStyle;
+        private GUIStyle popoutButtonStyle;
+        private GUIStyle centeredLabelStyle;
 
-        private bool togglePartSelector = false;
-        private Part selectPart = null;
         private List<Part> activeParts = new List<Part>();
         private string partFilter = "";
 
         private PartCommanderWindow currentWindow;
-        private Vector2 scrollPos = new Vector2(0f, 0f);
 
         private bool visibleUI = true;
-        private bool resizingWindow = false;
         
         private bool controlsLocked = false;
         private string controlsLockID = "PartCommander_LockID";
+
+        private bool popOff = false;
 
         public static PartCommander Instance { get; private set; }
         public PartCommander()
@@ -115,8 +116,20 @@ namespace PartCommander
                     }
                 }
 
+                if (popOff)
+                {
+                    if (currentWindow.currentPart != null)
+                    {
+                        PopOffWindow pow = new PopOffWindow(0f, 100f, currentWindow.windowRect.width, currentWindow.windowRect.height);
+                        pow.currentPart = currentWindow.currentPart;
+                        pow.currentPartId = currentWindow.currentPartId;
+                        currentWindow.partWindows.Add(pow.windowId, pow);
+                    }
+                    popOff = false;
+                }
+
                 // The part selector button was clicked in the gui
-                if (togglePartSelector)
+                if (currentWindow.togglePartSelector)
                 {
                     Debug.Log("[PC] part selector toggled");
                     // toggle part selector
@@ -139,7 +152,7 @@ namespace PartCommander
                             currentWindow.showPartSelector = true;
                         }
                     }
-                    togglePartSelector = false;
+                    currentWindow.togglePartSelector = false;
                 }
 
                 // Make sure the selected part still exists and is part of the active vessel, otherwise clear it out and reenable the part selector.
@@ -166,22 +179,24 @@ namespace PartCommander
                 // If there's only one available part on the vessel, select it automatically.
                 if (currentWindow.showPartSelector && activeParts.Count == 1 && partFilter == "")
                 {
-                    selectPart = activeParts.First();
+                    currentWindow.selectPart = activeParts.First();
                 }
 
                 // A part was selected in the gui
-                if (selectPart != null)
+                if (currentWindow.selectPart != null)
                 {
-                    if (selectPart.vessel == FlightGlobals.ActiveVessel)
+                    if (currentWindow.selectPart.vessel == FlightGlobals.ActiveVessel)
                     {
-                        GameEvents.onPartActionUICreate.Fire(selectPart);
-                        currentWindow.currentPart = selectPart;
-                        currentWindow.currentPartId = selectPart.flightID;
+                        GameEvents.onPartActionUICreate.Fire(currentWindow.selectPart);
+                        currentWindow.currentPart = currentWindow.selectPart;
+                        currentWindow.currentPartId = currentWindow.selectPart.flightID;
                         currentWindow.showPartSelector = false;
                         partFilter = "";
                     }
-                    selectPart = null;
+                    currentWindow.selectPart = null;
                 }
+
+
 
             }
         }
@@ -204,6 +219,11 @@ namespace PartCommander
                                 currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
                                 // Set the default location/size for new windows to be the same as this one
                                 PartCommanderScenario.Instance.gameSettings.windowDefaultRect = currentWindow.windowRect;
+
+                                foreach (PopOffWindow pow in currentWindow.partWindows.Values)
+                                {
+                                    pow.windowRect = GUILayout.Window(pow.windowId, pow.windowRect, partWindow, "");
+                                }
                             }
                         }
 
@@ -271,6 +291,9 @@ namespace PartCommander
             skin.label.padding.top = 0;
             skin.label.fontSize = fontSize;
 
+            centeredLabelStyle = skin.label;
+            centeredLabelStyle.alignment = TextAnchor.MiddleCenter;
+
             skin.verticalScrollbar.fixedWidth = 10f;
 
             skin.window.onNormal.textColor = skin.window.normal.textColor = XKCDColors.Green_Yellow;
@@ -283,6 +306,8 @@ namespace PartCommander
             resizeButtonStyle = GetToggleButtonStyle("resize", 20, 20);
             symLockButtonStyle = GetToggleButtonStyle("symlock", 20, 20);
             azButtonStyle = GetToggleButtonStyle("az", 20, 20);
+            closeButtonStyle = GetToggleButtonStyle("close", 10, 10);
+            popoutButtonStyle = GetToggleButtonStyle("popout", 20, 20);
             
             return (skin);
         }
@@ -326,16 +351,33 @@ namespace PartCommander
         {
             if (Input.GetMouseButtonUp(0))
             {
-                resizingWindow = false;
+                currentWindow.resizingWindow = false;
             }
 
-            if (resizingWindow)
+            if (currentWindow.resizingWindow)
             {
                 Debug.Log("[PC] resizing");
                 currentWindow.windowRect.width = Input.mousePosition.x - currentWindow.windowRect.x + 10;
                 currentWindow.windowRect.width = currentWindow.windowRect.width < 150 ? 150 : currentWindow.windowRect.width;
                 currentWindow.windowRect.height = (Screen.height - Input.mousePosition.y) - currentWindow.windowRect.y + 10;
                 currentWindow.windowRect.height = currentWindow.windowRect.height < 200 ? 200 : currentWindow.windowRect.height;
+            }
+
+            foreach (PopOffWindow pow in currentWindow.partWindows.Values)
+            {
+                if (Input.GetMouseButtonUp(0))
+                {
+                    pow.resizingWindow = false;
+                }
+
+                if (pow.resizingWindow)
+                {
+                    Debug.Log("[PC] resizing part window");
+                    pow.windowRect.width = Input.mousePosition.x - pow.windowRect.x + 10;
+                    pow.windowRect.width = pow.windowRect.width < 150 ? 150 : pow.windowRect.width;
+                    pow.windowRect.height = (Screen.height - Input.mousePosition.y) - pow.windowRect.y + 10;
+                    pow.windowRect.height = pow.windowRect.height < 200 ? 200 : pow.windowRect.height;
+                }
             }
         }
 
@@ -351,7 +393,7 @@ namespace PartCommander
                 {
                     if (currentWindow.showPartSelector == false && currentWindow.currentPart != null)
                     {
-                        setHighlighting(currentWindow.currentPart, true);
+                        setHighlighting(currentWindow.currentPart, currentWindow.symLock, true);
                     }
                 }
                 else
@@ -359,7 +401,7 @@ namespace PartCommander
                     Debug.Log("[PC] remove control lock");
                     InputLockManager.RemoveControlLock(controlsLockID);
                     controlsLocked = false;
-                    clearHighlighting();
+                    clearHighlighting(activeParts,currentWindow.symLock);
                 }
             }
             else
@@ -372,7 +414,7 @@ namespace PartCommander
 
                     if (currentWindow.showPartSelector == false && currentWindow.currentPart != null)
                     {
-                        setHighlighting(currentWindow.currentPart, true);
+                        setHighlighting(currentWindow.currentPart, currentWindow.symLock, true);
                     }
                 }
             }
@@ -403,12 +445,12 @@ namespace PartCommander
                 string partSelectorLabel = (currentWindow.symLock && currentWindow.currentPart.symmetryCounterparts.Count() > 0) ? currentWindow.currentPart.partInfo.title + " (x" + (currentWindow.currentPart.symmetryCounterparts.Count() + 1) + ")" : currentWindow.currentPart.partInfo.title;
                 if (GUILayout.Button(partSelectorLabel))
                 {
-                    togglePartSelector = true;
+                    currentWindow.togglePartSelector = true;
                 }    
             }
             
             // Main area
-            scrollPos = GUILayout.BeginScrollView(scrollPos);
+            currentWindow.scrollPos = GUILayout.BeginScrollView(currentWindow.scrollPos);
 
             if (currentWindow.showPartSelector)
             {
@@ -416,7 +458,7 @@ namespace PartCommander
             }
             else
             {
-                optionsCount = showOptions();
+                optionsCount = showOptions(currentWindow.currentPart, currentWindow.symLock);
             }
 
             if (optionsCount == 0)
@@ -425,6 +467,7 @@ namespace PartCommander
             }
 
             GUILayout.EndScrollView();
+            
             GUILayout.Space(5f);
             if (currentWindow.currentPart == null)
             {
@@ -433,15 +476,67 @@ namespace PartCommander
                 GUILayout.EndHorizontal();
                 GUILayout.Space(5f);
             }
+            
             GUILayout.BeginHorizontal();
-            showSettings();
+            showSettings(currentWindow);
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 
             // Create resize button in bottom right corner
             if (GUI.RepeatButton(new Rect(currentWindow.windowRect.width - 23, currentWindow.windowRect.height - 23, 20, 20), "", resizeButtonStyle))
             {
-                resizingWindow = true;
+                currentWindow.resizingWindow = true;
+            }
+
+            // Make window draggable by title
+            GUI.DragWindow(new Rect(0, 0, 10000, 20));
+        }
+
+        public void partWindow(int id)
+        {
+            PopOffWindow currentPOW = currentWindow.partWindows[id];
+            if (currentPOW.currentPart == null)
+            {
+                currentWindow.partWindows.Remove(id);
+                return;
+            }
+
+            string partWindowTitle = (currentPOW.symLock && currentPOW.currentPart.symmetryCounterparts.Count() > 0) ? currentPOW.currentPart.partInfo.title + " (x" + (currentPOW.currentPart.symmetryCounterparts.Count() + 1) + ")" : currentPOW.currentPart.partInfo.title;
+
+            int optionsCount = 0;
+
+            GUILayout.BeginVertical();
+            GUILayout.Label(partWindowTitle,centeredLabelStyle);
+
+            // Main area
+            currentPOW.scrollPos = GUILayout.BeginScrollView(currentPOW.scrollPos);
+
+            optionsCount = showOptions(currentPOW.currentPart, currentPOW.symLock);
+
+            if (optionsCount == 0)
+            {
+                GUILayout.Label("Nothing to display.");
+            }
+
+            GUILayout.EndScrollView();
+
+            GUILayout.Space(5f);
+
+            GUILayout.BeginHorizontal();
+            showPartSettings(currentPOW);
+            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+
+            // Create resize button in bottom right corner
+            if (GUI.RepeatButton(new Rect(currentPOW.windowRect.width - 23, currentPOW.windowRect.height - 23, 20, 20), "", resizeButtonStyle))
+            {
+                currentPOW.resizingWindow = true;
+            }
+
+            // Create close button in upper right corner
+            if (GUI.Button(new Rect(currentPOW.windowRect.width - 13, 3f, 10f, 10f), "", closeButtonStyle))
+            {
+                currentWindow.partWindows.Remove(currentPOW.windowId);
             }
 
             // Make window draggable by title
@@ -537,19 +632,19 @@ namespace PartCommander
                 string partTitle = (currentWindow.symLock && p.symmetryCounterparts.Count() > 0) ? p.partInfo.title + " (x" + (p.symmetryCounterparts.Count() + 1) + ")" : p.partInfo.title;
                 if (GUILayout.Button(partTitle))
                 {
-                    selectPart = p;
+                    currentWindow.selectPart = p;
                 }
                 if (Event.current.type == EventType.Repaint)
                 {
                     if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
                     {
-                        setHighlighting(p, true);
+                        setHighlighting(p, currentWindow.symLock, true);
                     }
                     else
                     {
                         if (controlsLocked)
                         {
-                            setHighlighting(p, false);
+                            setHighlighting(p, currentWindow.symLock, false);
                         }
                     }
                 }
@@ -560,22 +655,22 @@ namespace PartCommander
 
         // ----------------------------------- Selected Part Logic -------------------------
 
-        private int showOptions()
+        private int showOptions(Part p, bool symLock)
         {
             int optionsCount = 0;
-            string multiEngineMode = getEngineMode(currentWindow.currentPart);
-            optionsCount += showFields(multiEngineMode);
-            optionsCount += showEvents(multiEngineMode);
-            optionsCount += showResources();
-            showTemperatureInfo();
+            string multiEngineMode = getEngineMode(p);
+            optionsCount += showFields(p, symLock, multiEngineMode);
+            optionsCount += showEvents(p, symLock, multiEngineMode);
+            optionsCount += showResources(p);
+            showTemperatureInfo(p);
             return (optionsCount);
         }
 
         // Routines for displaying/setting KSPFields
-        private int showFields(string multiEngineMode)
+        private int showFields(Part p, bool symLock, string multiEngineMode)
         {
             int fieldCount = 0;
-            foreach (PartModule pm in currentWindow.currentPart.Modules)
+            foreach (PartModule pm in p.Modules)
             {
                 if (pm.Fields != null)
                 {
@@ -589,11 +684,11 @@ namespace PartCommander
 
                                 if (f.uiControlFlight.GetType().ToString() == "UI_Toggle")
                                 {
-                                    showToggleField(multiEngineMode, pm, f);
+                                    showToggleField(p, symLock, pm, f, multiEngineMode);
                                 }
                                 else if (f.uiControlFlight.GetType().ToString() == "UI_FloatRange")
                                 {
-                                    showSliderField(multiEngineMode, pm, f);
+                                    showSliderField(p, symLock, pm, f, multiEngineMode);
 
                                 }
                                 else
@@ -608,7 +703,7 @@ namespace PartCommander
             return fieldCount;
         }
 
-        private void showSliderField(string multiEngineMode, PartModule pm, BaseField f)
+        private void showSliderField(Part p, bool symLock, PartModule pm, BaseField f, string multiEngineMode)
         {
             UI_FloatRange fr = (UI_FloatRange)f.uiControlFlight;
             GUILayout.Label(f.GuiString(f.host));
@@ -617,10 +712,10 @@ namespace PartCommander
             curVal = GUILayout.HorizontalSlider(curVal, fr.minValue, fr.maxValue);
             GUILayout.Space(10f);
             curVal = Mathf.CeilToInt(curVal / fr.stepIncrement) * fr.stepIncrement;
-            setPartModuleFieldValue(multiEngineMode, currentWindow.symLock, pm, f, curVal);
+            setPartModuleFieldValue(p, symLock, pm, f, multiEngineMode, curVal);
         }
 
-        private void showToggleField(string multiEngineMode, PartModule pm, BaseField f)
+        private void showToggleField(Part p, bool symLock, PartModule pm, BaseField f, string multiEngineMode)
         {
             UI_Toggle t = (UI_Toggle)f.uiControlFlight;
             bool curVal = (bool)f.GetValue(f.host);
@@ -629,17 +724,17 @@ namespace PartCommander
             if (GUILayout.Button(f.guiName + ": " + curText))
             {
                 curVal = !curVal;
-                setPartModuleFieldValue(multiEngineMode, currentWindow.symLock, pm, f, curVal);
+                setPartModuleFieldValue(p, symLock, pm, f, multiEngineMode, curVal);
             }
 
         }
 
-        private void setPartModuleFieldValue<T>(string multiEngineMode, bool symLock, PartModule pm, BaseField f, T curVal)
+        private void setPartModuleFieldValue<T>(Part p, bool symLock, PartModule pm, BaseField f, string multiEngineMode, T curVal)
         {
             f.SetValue(curVal, f.host);
             if (symLock)
             {
-                foreach (Part symPart in currentWindow.currentPart.symmetryCounterparts)
+                foreach (Part symPart in p.symmetryCounterparts)
                 {
                     foreach (PartModule symPM in symPart.Modules)
                     {
@@ -662,10 +757,10 @@ namespace PartCommander
         }
 
         // Routines for displaying KSPEvents
-        private int showEvents(string multiEngineMode)
+        private int showEvents(Part p, bool symLock, string multiEngineMode)
         {
             int eventCount = 0;
-            foreach (PartModule pm in currentWindow.currentPart.Modules)
+            foreach (PartModule pm in p.Modules)
             {
                 if (pm.Events != null)
                 {
@@ -676,7 +771,7 @@ namespace PartCommander
                             if (e.active && e.guiActive)
                             {
                                 eventCount++;
-                                showEvent(multiEngineMode, pm, e);
+                                showEvent(p, symLock, pm, e, multiEngineMode);
                             }
                         }
                     }
@@ -685,14 +780,14 @@ namespace PartCommander
             return eventCount;
         }
 
-        private void showEvent(string multiEngineMode, PartModule pm, BaseEvent e)
+        private void showEvent(Part p, bool symLock, PartModule pm, BaseEvent e, string multiEngineMode)
         {
             if (GUILayout.Button(e.guiName))
             {
                 e.Invoke();
-                if (currentWindow.symLock)
+                if (symLock)
                 {
-                    foreach (Part symPart in currentWindow.currentPart.symmetryCounterparts)
+                    foreach (Part symPart in p.symmetryCounterparts)
                     {
                         foreach (PartModule symPM in symPart.Modules)
                         {
@@ -716,10 +811,10 @@ namespace PartCommander
         }
 
         // Display Resources
-        private int showResources()
+        private int showResources(Part p)
         {
             int resourceCount = 0;
-            foreach (PartResource pr in currentWindow.currentPart.Resources)
+            foreach (PartResource pr in p.Resources)
             {
                 if (pr.isActiveAndEnabled)
                 {
@@ -731,55 +826,82 @@ namespace PartCommander
         }
 
         // Display Temperature Info
-        private void showTemperatureInfo()
+        private void showTemperatureInfo(Part p)
         {
             if (PhysicsGlobals.ThermalDataDisplay)
             {
-                GUILayout.Label("Thermal Mass: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalMass, 2)));
-                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.maxTemp)));
-                GUILayout.Label("Temp Ext: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.externalTemperature, 2)));
-                GUILayout.Label("Cond Flux: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalConductionFlux, 2)));
-                GUILayout.Label("Conv Flux: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalConvectionFlux, 2)));
-                GUILayout.Label("Rad Flux: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalRadiationFlux, 2)));
-                GUILayout.Label("Int Flux: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.thermalInternalFlux, 2)));
+                GUILayout.Label("Thermal Mass: " + string.Format("{0:N2}", Math.Round(p.thermalMass, 2)));
+                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(p.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(p.maxTemp)));
+                GUILayout.Label("Temp Ext: " + string.Format("{0:N2}", Math.Round(p.externalTemperature, 2)));
+                GUILayout.Label("Cond Flux: " + string.Format("{0:N2}", Math.Round(p.thermalConductionFlux, 2)));
+                GUILayout.Label("Conv Flux: " + string.Format("{0:N2}", Math.Round(p.thermalConvectionFlux, 2)));
+                GUILayout.Label("Rad Flux: " + string.Format("{0:N2}", Math.Round(p.thermalRadiationFlux, 2)));
+                GUILayout.Label("Int Flux: " + string.Format("{0:N2}", Math.Round(p.thermalInternalFlux, 2)));
             }
             else
             {
-                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(currentWindow.currentPart.maxTemp)));
+                GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(p.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(p.maxTemp)));
             }
         }
 
         // Display settings
-        private void showSettings()
+        private void showSettings(PartCommanderWindow w)
         {
-            bool oldSymLock = currentWindow.symLock;
-            currentWindow.symLock = GUILayout.Toggle(currentWindow.symLock, "", symLockButtonStyle);
-            if (currentWindow.symLock != oldSymLock)
+            bool oldSymLock = w.symLock;
+            w.symLock = GUILayout.Toggle(w.symLock, "", symLockButtonStyle);
+            if (w.symLock != oldSymLock)
             {
-                if (currentWindow.currentPart != null)
+                if (w.currentPart != null)
                 {
                     // reset part highlighting
-                    clearHighlighting();
-                    setHighlighting(currentWindow.currentPart, true);
+                    clearHighlighting(activeParts,w.symLock);
+                    setHighlighting(w.currentPart, w.symLock, true);
                 }
             }
 
             GUILayout.Space(5f);
 
             // Alpha sort button
-            if (currentWindow.currentPart == null)
+            if (w.currentPart == null)
             {
-                currentWindow.alphaSort = GUILayout.Toggle(currentWindow.alphaSort, "", azButtonStyle);
+                w.alphaSort = GUILayout.Toggle(w.alphaSort, "", azButtonStyle);
+            }
+
+            // Part pop-off
+            if (w.currentPart != null)
+            {
+                if (GUILayout.Button("", popoutButtonStyle))
+                {
+                    w.togglePartSelector = true;
+                    popOff = true;
+                }
             }
             
         }
 
+        private void showPartSettings(PopOffWindow pow)
+        {
+            bool oldSymLock = pow.symLock;
+            pow.symLock = GUILayout.Toggle(pow.symLock, "", symLockButtonStyle);
+            if (pow.symLock != oldSymLock)
+            {
+                if (pow.currentPart != null)
+                {
+                    // reset part highlighting
+                    clearHighlighting(activeParts, pow.symLock);
+                    setHighlighting(pow.currentPart, pow.symLock, true);
+                }
+            }
+
+            GUILayout.Space(5f);
+        }
+
         // ----------------------------------- Part Highlighting -----------------------------------
 
-        private void setHighlighting(Part p, bool highlight)
+        private void setHighlighting(Part p, bool symLock, bool highlight)
         {
             p.SetHighlight(highlight, false);
-            if (currentWindow.symLock)
+            if (symLock)
             {
                 foreach (Part symPart in p.symmetryCounterparts)
                 {
@@ -788,11 +910,11 @@ namespace PartCommander
             }
         }
 
-        private void clearHighlighting()
+        private void clearHighlighting(List<Part> ap, bool symLock)
         {
-            foreach (Part p in activeParts)
+            foreach (Part p in ap)
             {
-                setHighlighting(p, false);
+                setHighlighting(p, symLock, false);
             }
         }
 
