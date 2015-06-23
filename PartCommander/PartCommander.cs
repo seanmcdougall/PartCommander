@@ -32,6 +32,8 @@ namespace PartCommander
         internal ApplicationLauncherButton launcherButton = null;
 
         private int fontSize = 12;
+        private int minWidth = 100;
+        private int minHeight = 100;
         private GUISkin skin;
         private GUIStyle resizeButtonStyle;
         private GUIStyle symLockButtonStyle;
@@ -89,7 +91,6 @@ namespace PartCommander
                 // Check to see if we already have a saved window, if not then create a new one
                 if (!PartCommanderScenario.Instance.gameSettings.vesselWindows.ContainsKey(FlightGlobals.ActiveVessel.id))
                 {
-                    Debug.Log("[PC] creating window for " + FlightGlobals.ActiveVessel.vesselName + " " + FlightGlobals.ActiveVessel.id);
                     PartCommanderScenario.Instance.gameSettings.vesselWindows.Add(FlightGlobals.ActiveVessel.id, new PartCommanderWindow());
                 }
                 // Load the saved window
@@ -98,13 +99,10 @@ namespace PartCommander
                 // If we don't have a selected part but we do have an id, then resurrect it
                 if (currentWindow.currentPart == null && currentWindow.currentPartId != 0u)
                 {
-                    Debug.Log("[PC] resurrecting current part from flight ID " + currentWindow.currentPartId);
                     foreach (Part p in FlightGlobals.ActiveVessel.Parts)
                     {
-                        Debug.Log("[PC] checking " + p.partInfo.title + " " + p.flightID);
                         if (p.flightID == currentWindow.currentPartId)
                         {
-                            Debug.Log("[PC] found it!");
                             currentWindow.currentPart = p;
                             break;
                         }
@@ -116,11 +114,31 @@ namespace PartCommander
                     }
                 }
 
+                foreach (PopOffWindow pow in currentWindow.partWindows.Values)
+                {
+                    if (pow.currentPart == null & pow.currentPartId != 0u)
+                    {
+                        foreach (Part p in FlightGlobals.ActiveVessel.Parts)
+                        {
+                            if (p.flightID == pow.currentPartId)
+                            {
+                                pow.currentPart = p;
+                                break;
+                            }
+                        }
+                        // If we still don't have a part, then the id must be invalid or the part is gone.  Clear it out.
+                        if (pow.currentPart == null)
+                        {
+                            currentWindow.partWindows.Remove(pow.windowId);
+                        }
+                    }
+                }
+
                 if (popOff)
                 {
                     if (currentWindow.currentPart != null)
                     {
-                        PopOffWindow pow = new PopOffWindow(0f, 100f, currentWindow.windowRect.width, currentWindow.windowRect.height);
+                        PopOffWindow pow = new PopOffWindow((Screen.width-currentWindow.windowRect.width)/2, (Screen.height-currentWindow.windowRect.height)/2, currentWindow.windowRect.width, currentWindow.windowRect.height);
                         pow.currentPart = currentWindow.currentPart;
                         pow.currentPartId = currentWindow.currentPartId;
                         currentWindow.partWindows.Add(pow.windowId, pow);
@@ -131,7 +149,6 @@ namespace PartCommander
                 // The part selector button was clicked in the gui
                 if (currentWindow.togglePartSelector)
                 {
-                    Debug.Log("[PC] part selector toggled");
                     // toggle part selector
                     currentWindow.showPartSelector = !currentWindow.showPartSelector;
                     if (currentWindow.showPartSelector)
@@ -165,7 +182,6 @@ namespace PartCommander
                 {
                     if (currentWindow.currentPart.vessel != FlightGlobals.ActiveVessel)
                     {
-                        Debug.Log("[PC] clearing out active part");
                         currentWindow.currentPart = null;
                         currentWindow.currentPartId = 0u;
                         currentWindow.showPartSelector = true;
@@ -216,13 +232,13 @@ namespace PartCommander
                             if (PartCommanderScenario.Instance.gameSettings.visibleWindow)
                             {
                                 GUI.skin = skin;
-                                currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, FlightGlobals.ActiveVessel.vesselName);
+                                currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, "Part Commander");
                                 // Set the default location/size for new windows to be the same as this one
                                 PartCommanderScenario.Instance.gameSettings.windowDefaultRect = currentWindow.windowRect;
 
                                 foreach (PopOffWindow pow in currentWindow.partWindows.Values)
                                 {
-                                    pow.windowRect = GUILayout.Window(pow.windowId, pow.windowRect, partWindow, "");
+                                    pow.windowRect = GUILayout.Window(pow.windowId, pow.windowRect, partWindow, "Part Commander");
                                 }
                             }
                         }
@@ -234,21 +250,21 @@ namespace PartCommander
 
         public void onSceneChange(GameScenes scene)
         {
-            Debug.Log("[PC] onSceneChange");
             removeLauncherButton();
         }
 
         protected void OnDestroy()
         {
-            Debug.Log("[PC] onDestroy");
             PartCommanderScenario.Instance.gameSettings.visibleWindow = false;
             GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
             GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
             removeLauncherButton();
 
             if (InputLockManager.lockStack.ContainsKey(controlsLockID))
-                Debug.Log("[PC] remove control lock");
-            InputLockManager.RemoveControlLock(controlsLockID);
+            {
+                InputLockManager.RemoveControlLock(controlsLockID);
+            }
+
         }
 
         // -------------------------------------- Skin/Textures ------------------------------------------
@@ -259,7 +275,7 @@ namespace PartCommander
             return img;
         }
 
-        private GUIStyle GetToggleButtonStyle(string styleName,int width,int height)
+        private GUIStyle GetToggleButtonStyle(string styleName,int width,int height, bool hover)
         {
             GUIStyle myStyle = new GUIStyle();
             Texture2D styleOff = GetImage("PartCommander/textures/" + styleName + "_off", width, height);
@@ -271,7 +287,10 @@ namespace PartCommander
             myStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
             myStyle.normal.background = styleOff;
             myStyle.onNormal.background = styleOn;
-            myStyle.hover.background = styleOn;
+            if (hover)
+            {
+                myStyle.hover.background = styleOn;
+            }
             myStyle.active.background = styleOn;
             myStyle.fixedWidth = width;
             myStyle.fixedHeight = height;
@@ -280,7 +299,6 @@ namespace PartCommander
 
         private GUISkin SetupSkin()
         {
-            Debug.Log("[PC] SetupSkin");
             // Setup skin
             GUISkin skin = GameObject.Instantiate(HighLogic.Skin) as GUISkin;
 
@@ -291,8 +309,12 @@ namespace PartCommander
             skin.label.padding.top = 0;
             skin.label.fontSize = fontSize;
 
-            centeredLabelStyle = skin.label;
+            centeredLabelStyle = new GUIStyle();
+            centeredLabelStyle.name = "centeredLabel";
+            centeredLabelStyle.fontSize = fontSize + 2;
             centeredLabelStyle.alignment = TextAnchor.MiddleCenter;
+            centeredLabelStyle.wordWrap = true;
+            centeredLabelStyle.normal.textColor = XKCDColors.White;
 
             skin.verticalScrollbar.fixedWidth = 10f;
 
@@ -303,11 +325,11 @@ namespace PartCommander
             skin.window.padding.left = skin.window.padding.right = skin.window.padding.bottom = 2;
             skin.window.fontSize = (fontSize + 2);
 
-            resizeButtonStyle = GetToggleButtonStyle("resize", 20, 20);
-            symLockButtonStyle = GetToggleButtonStyle("symlock", 20, 20);
-            azButtonStyle = GetToggleButtonStyle("az", 20, 20);
-            closeButtonStyle = GetToggleButtonStyle("close", 10, 10);
-            popoutButtonStyle = GetToggleButtonStyle("popout", 20, 20);
+            resizeButtonStyle = GetToggleButtonStyle("resize", 20, 20, true);
+            symLockButtonStyle = GetToggleButtonStyle("symlock", 20, 20, false);
+            azButtonStyle = GetToggleButtonStyle("az", 20, 20, false);
+            closeButtonStyle = GetToggleButtonStyle("close", 10, 10, true);
+            popoutButtonStyle = GetToggleButtonStyle("popout", 20, 20, true);
             
             return (skin);
         }
@@ -315,35 +337,29 @@ namespace PartCommander
         // ------------------------------------------ Application Launcher / UI ---------------------------------------
         private void OnGUIApplicationLauncherReady()
         {
-            Debug.Log("[PC] OnGUIApplicationLauncherReady");
             if (launcherButton == null)
             {
-                Debug.Log("[PC] AddModApplication");
                 launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, GetImage("PartCommander/textures/toolbar",38,38));
             }
         }
 
         public void showUI() // triggered on F2
         {
-            Debug.Log("[PC] showUI");
             visibleUI = true;
         }
 
         public void hideUI() // triggered on F2
         {
-            Debug.Log("[PC] hideUI");
             visibleUI = false;
         }
 
         public void showWindow()  // triggered by toolbar
         {
-            Debug.Log("[PC] showWindow");
             PartCommanderScenario.Instance.gameSettings.visibleWindow = true;
         }
 
         public void hideWindow() // triggered by toolbar
         {
-            Debug.Log("[PC] hideWindow");
             PartCommanderScenario.Instance.gameSettings.visibleWindow = false;
         }
 
@@ -356,11 +372,10 @@ namespace PartCommander
 
             if (currentWindow.resizingWindow)
             {
-                Debug.Log("[PC] resizing");
                 currentWindow.windowRect.width = Input.mousePosition.x - currentWindow.windowRect.x + 10;
-                currentWindow.windowRect.width = currentWindow.windowRect.width < 150 ? 150 : currentWindow.windowRect.width;
+                currentWindow.windowRect.width = currentWindow.windowRect.width < minWidth ? minWidth : currentWindow.windowRect.width;
                 currentWindow.windowRect.height = (Screen.height - Input.mousePosition.y) - currentWindow.windowRect.y + 10;
-                currentWindow.windowRect.height = currentWindow.windowRect.height < 200 ? 200 : currentWindow.windowRect.height;
+                currentWindow.windowRect.height = currentWindow.windowRect.height < minHeight ? minHeight : currentWindow.windowRect.height;
             }
 
             foreach (PopOffWindow pow in currentWindow.partWindows.Values)
@@ -372,11 +387,10 @@ namespace PartCommander
 
                 if (pow.resizingWindow)
                 {
-                    Debug.Log("[PC] resizing part window");
                     pow.windowRect.width = Input.mousePosition.x - pow.windowRect.x + 10;
-                    pow.windowRect.width = pow.windowRect.width < 150 ? 150 : pow.windowRect.width;
+                    pow.windowRect.width = pow.windowRect.width < minWidth ? minWidth : pow.windowRect.width;
                     pow.windowRect.height = (Screen.height - Input.mousePosition.y) - pow.windowRect.y + 10;
-                    pow.windowRect.height = pow.windowRect.height < 200 ? 200 : pow.windowRect.height;
+                    pow.windowRect.height = pow.windowRect.height < minHeight ? minHeight : pow.windowRect.height;
                 }
             }
         }
@@ -387,45 +401,72 @@ namespace PartCommander
             Vector2 mousePos = Input.mousePosition;
             mousePos.y = Screen.height - mousePos.y;
 
+            bool overWindow = false;
+            Part overPart = null;
+            bool overSymLock = true;
+
+            if (currentWindow.windowRect.Contains(mousePos))
+            {
+                overWindow = true;
+                if (currentWindow.showPartSelector == false && currentWindow.currentPart != null)
+                {
+                    overPart = currentWindow.currentPart;
+                    overSymLock = currentWindow.symLock;
+                }
+                
+            }
+            else
+            {
+                foreach (PopOffWindow pow in currentWindow.partWindows.Values)
+                {
+                    if (pow.windowRect.Contains(mousePos))
+                    {
+                        overWindow = true;
+                        overPart = pow.currentPart;
+                        overSymLock = pow.symLock;
+                    }
+                }
+            }
+
             if (controlsLocked)
             {
-                if (visibleUI && PartCommanderScenario.Instance.gameSettings.visibleWindow && currentWindow.windowRect.Contains(mousePos))
+                if (visibleUI && PartCommanderScenario.Instance.gameSettings.visibleWindow && overWindow)
                 {
-                    if (currentWindow.showPartSelector == false && currentWindow.currentPart != null)
+                    if (overPart != null)
                     {
-                        setHighlighting(currentWindow.currentPart, currentWindow.symLock, true);
+                        setHighlighting(overPart, overSymLock, true);
                     }
                 }
                 else
                 {
-                    Debug.Log("[PC] remove control lock");
                     InputLockManager.RemoveControlLock(controlsLockID);
                     controlsLocked = false;
-                    clearHighlighting(activeParts,currentWindow.symLock);
+                    clearHighlighting(activeParts);
                 }
             }
             else
             {
-                if (visibleUI && PartCommanderScenario.Instance.gameSettings.visibleWindow && currentWindow.windowRect.Contains(mousePos))
+                if (visibleUI && PartCommanderScenario.Instance.gameSettings.visibleWindow && overWindow)
                 {
-                    Debug.Log("[PC] set control lock");
                     InputLockManager.SetControlLock(ControlTypes.CAMERACONTROLS, controlsLockID);
                     controlsLocked = true;
 
-                    if (currentWindow.showPartSelector == false && currentWindow.currentPart != null)
+                    if (overPart != null)
                     {
-                        setHighlighting(currentWindow.currentPart, currentWindow.symLock, true);
+                        setHighlighting(overPart, overSymLock, true);
                     }
+                }
+                else
+                {
+                    clearHighlighting(activeParts);
                 }
             }
         }
 
         public void removeLauncherButton()
         {
-            Debug.Log("[PC] removeLauncherButton");
             if (launcherButton != null)
             {
-                Debug.Log("[PC] removeModApplication");
                 ApplicationLauncher.Instance.RemoveModApplication(launcherButton);
             }
         }
@@ -438,6 +479,7 @@ namespace PartCommander
             int optionsCount = 0;
 
             GUILayout.BeginVertical();
+            GUILayout.Label(FlightGlobals.ActiveVessel.vesselName, centeredLabelStyle);
 
             // Part selector button
             if (currentWindow.currentPart != null)
@@ -832,7 +874,7 @@ namespace PartCommander
             {
                 GUILayout.Label("Thermal Mass: " + string.Format("{0:N2}", Math.Round(p.thermalMass, 2)));
                 GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(p.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(p.maxTemp)));
-                GUILayout.Label("Temp Ext: " + string.Format("{0:N2}", Math.Round(p.externalTemperature, 2)));
+                //GUILayout.Label("Temp Ext: " + string.Format("{0:N2}", Math.Round(p.externalTemperature, 2)));
                 GUILayout.Label("Cond Flux: " + string.Format("{0:N2}", Math.Round(p.thermalConductionFlux, 2)));
                 GUILayout.Label("Conv Flux: " + string.Format("{0:N2}", Math.Round(p.thermalConvectionFlux, 2)));
                 GUILayout.Label("Rad Flux: " + string.Format("{0:N2}", Math.Round(p.thermalRadiationFlux, 2)));
@@ -854,7 +896,7 @@ namespace PartCommander
                 if (w.currentPart != null)
                 {
                     // reset part highlighting
-                    clearHighlighting(activeParts,w.symLock);
+                    clearHighlighting(activeParts);
                     setHighlighting(w.currentPart, w.symLock, true);
                 }
             }
@@ -888,7 +930,7 @@ namespace PartCommander
                 if (pow.currentPart != null)
                 {
                     // reset part highlighting
-                    clearHighlighting(activeParts, pow.symLock);
+                    clearHighlighting(activeParts);
                     setHighlighting(pow.currentPart, pow.symLock, true);
                 }
             }
@@ -910,11 +952,11 @@ namespace PartCommander
             }
         }
 
-        private void clearHighlighting(List<Part> ap, bool symLock)
+        private void clearHighlighting(List<Part> ap)
         {
             foreach (Part p in ap)
             {
-                setHighlighting(p, symLock, false);
+                setHighlighting(p, true, false);
             }
         }
 

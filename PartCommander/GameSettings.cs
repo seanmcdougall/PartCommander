@@ -15,14 +15,13 @@ namespace PartCommander
         public ConfigNode SettingsNode { get; private set; }
         public Rect windowDefaultRect;
         public Dictionary<Guid, PartCommanderWindow> vesselWindows = new Dictionary<Guid, PartCommanderWindow>();
-        
+
         public bool visibleWindow = false;
 
         public void Load(ConfigNode node)
         {
             if (node.HasNode("PartCommanderGameSettings"))
             {
-                Debug.Log("[PC] Loading settings");
                 SettingsNode = node.GetNode("PartCommanderGameSettings");
                 windowDefaultX = SettingsNode.GetValueOrDefault("windowDefaultX", windowDefaultX);
                 windowDefaultY = SettingsNode.GetValueOrDefault("windowDefaultY", windowDefaultY);
@@ -38,28 +37,38 @@ namespace PartCommander
                         Guid vesselId = new Guid(vesselNode.name);
                         uint partId = vesselNode.GetValueOrDefault("currentPartId", 0u);
 
-                        Debug.Log("[PC] looking for " + vesselId);
-
                         foreach (Vessel v in FlightGlobals.Vessels)
                         {
-                            Debug.Log("[PC] checking vessel " + v.vesselName + " " + v.id);
                             if (v.id == vesselId)
                             {
-                                Debug.Log("[PC] found it!");
                                 vesselWindows[vesselId] = new PartCommanderWindow(vesselNode.GetValueOrDefault("windowX", windowDefaultX), vesselNode.GetValueOrDefault("windowY", windowDefaultY), vesselNode.GetValueOrDefault("windowWidth", windowDefaultWidth), vesselNode.GetValueOrDefault("windowHeight", windowDefaultHeight));
                                 vesselWindows[vesselId].symLock = vesselNode.GetValueOrDefault("symLock", true);
                                 vesselWindows[vesselId].showPartSelector = false;
                                 vesselWindows[vesselId].currentPartId = partId;
+
+                                if (vesselNode.HasNode("PartWindows"))
+                                {
+                                    foreach (ConfigNode pwNode in vesselNode.GetNode("PartWindows").nodes)
+                                    {
+                                        int windowId = int.Parse(pwNode.name);
+                                        PopOffWindow pow = new PopOffWindow(pwNode.GetValueOrDefault("windowX", windowDefaultX), pwNode.GetValueOrDefault("windowY", windowDefaultY), pwNode.GetValueOrDefault("windowWidth", windowDefaultWidth), pwNode.GetValueOrDefault("windowHeight", windowDefaultHeight));
+                                        pow.windowId = windowId;
+                                        pow.currentPartId = pwNode.GetValueOrDefault("currentPartId", 0u);
+                                        pow.symLock = pwNode.GetValueOrDefault("symLock", true);
+                                        vesselWindows[vesselId].partWindows.Add(windowId, pow);
+                                    }
+                                }
+
                                 break;
                             }
                         }
+
                     }
                 }
                 if (PartCommander.Instance.launcherButton != null)
                 {
                     if (visibleWindow)
                     {
-                        Debug.Log("[PC] turning on toolbar");
                         PartCommander.Instance.launcherButton.SetTrue(true);
                     }
                 }
@@ -72,7 +81,6 @@ namespace PartCommander
 
         public void Save(ConfigNode node)
         {
-            Debug.Log("[PC] Saving settings");
             if (node.HasNode("PartCommanderGameSettings"))
             {
                 SettingsNode.RemoveNode("PartCommanderGameSettings");
@@ -86,16 +94,26 @@ namespace PartCommander
             ConfigNode vesselsNode = SettingsNode.AddNode("Vessels");
             foreach (Guid g in vesselWindows.Keys)
             {
-                if (vesselWindows[g].currentPartId != 0u)
+
+                ConfigNode n = vesselsNode.AddNode(g.ToString());
+                n.AddValue("windowX", vesselWindows[g].windowRect.x);
+                n.AddValue("windowY", vesselWindows[g].windowRect.y);
+                n.AddValue("windowWidth", vesselWindows[g].windowRect.width);
+                n.AddValue("windowHeight", vesselWindows[g].windowRect.height);
+                n.AddValue("currentPartId", vesselWindows[g].currentPartId);
+                n.AddValue("symLock", vesselWindows[g].symLock);
+                ConfigNode partWindowsNode = n.AddNode("PartWindows");
+                foreach (PopOffWindow pow in vesselWindows[g].partWindows.Values)
                 {
-                    ConfigNode n = vesselsNode.AddNode(g.ToString());
-                    n.AddValue("windowX", vesselWindows[g].windowRect.x);
-                    n.AddValue("windowY", vesselWindows[g].windowRect.y);
-                    n.AddValue("windowWidth", vesselWindows[g].windowRect.width);
-                    n.AddValue("windowHeight", vesselWindows[g].windowRect.height);
-                    n.AddValue("currentPartId", vesselWindows[g].currentPartId);
-                    n.AddValue("symLock", vesselWindows[g].symLock);
+                    ConfigNode pn = partWindowsNode.AddNode(pow.windowId.ToString());
+                    pn.AddValue("windowX", pow.windowRect.x);
+                    pn.AddValue("windowY", pow.windowRect.y);
+                    pn.AddValue("windowWidth", pow.windowRect.width);
+                    pn.AddValue("windowHeight", pow.windowRect.height);
+                    pn.AddValue("currentPartId", pow.currentPartId);
+                    pn.AddValue("symLock", pow.symLock);
                 }
+
             }
         }
     }
