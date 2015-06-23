@@ -6,16 +6,16 @@ using UnityEngine;
 
 namespace PartCommander
 {
-    public class PartCommanderScenario : ScenarioModule
+    public class PCScenario : ScenarioModule
     {
 
-        public static PartCommanderScenario Instance { get; private set; }
-        public PartCommanderGameSettings gameSettings { get; private set; }
+        public static PCScenario Instance { get; private set; }
+        public GameSettings gameSettings { get; private set; }
 
-        public PartCommanderScenario()
+        public PCScenario()
         {
             Instance = this;
-            gameSettings = new PartCommanderGameSettings();
+            gameSettings = new GameSettings();
         }
 
         public override void OnLoad(ConfigNode gameNode)

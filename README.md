@@ -11,3 +11,7 @@ Plugin for Kerbal Space Program (KSP).  Creates a window that allows for easy co
 - added temperature display (more available when F12 debug option is enabled)
 
 0.9.0 (Initial WIP release) 
+
+
+ACKNOWLEDGEMENTS
+- Icons made by Freepik (http://www.flaticon.com/authors/freepik) from www.flaticon.com are licensed by CC BY 3.0 (http://creativecommons.org/licenses/by/3.0/)

@@ -55,10 +55,10 @@
     <Compile Include="ConfigNodeExtensions.cs" />
     <Compile Include="GameSettings.cs" />
     <Compile Include="PartCommander.cs" />
-    <Compile Include="PopOffWindow.cs" />
-    <Compile Include="PartCommanderWindow.cs" />
+    <Compile Include="PopOutWindow.cs" />
+    <Compile Include="Window.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PartCommanderScenario.cs" />
+    <Compile Include="Scenario.cs" />
     <Compile Include="StringExtensions.cs" />
   </ItemGroup>
   <ItemGroup />

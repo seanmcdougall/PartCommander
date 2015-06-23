@@ -13,10 +13,10 @@ namespace PartCommander
         {
             var game = HighLogic.CurrentGame;
 
-            var psm = game.scenarios.Find(s => s.moduleName == typeof(PartCommanderScenario).Name);
+            var psm = game.scenarios.Find(s => s.moduleName == typeof(PCScenario).Name);
             if (psm == null)
             {
-                game.AddProtoScenarioModule(typeof(PartCommanderScenario), GameScenes.FLIGHT);
+                game.AddProtoScenarioModule(typeof(PCScenario), GameScenes.FLIGHT);
             }
             else
             {

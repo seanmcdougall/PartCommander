@@ -1,11 +1,11 @@
-﻿// Stores general settings for Part Commander
+﻿// Stores settings for Part Commander
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace PartCommander
 {
-    public class PartCommanderGameSettings
+    public class GameSettings
     {
         private float windowDefaultX = (Screen.width - 270f);
         private float windowDefaultY = (Screen.height / 2 - 200f);
@@ -14,7 +14,7 @@ namespace PartCommander
 
         public ConfigNode SettingsNode { get; private set; }
         public Rect windowDefaultRect;
-        public Dictionary<Guid, PartCommanderWindow> vesselWindows = new Dictionary<Guid, PartCommanderWindow>();
+        public Dictionary<Guid, PCWindow> vesselWindows = new Dictionary<Guid, PCWindow>();
 
         public bool visibleWindow = false;
 
@@ -41,7 +41,7 @@ namespace PartCommander
                         {
                             if (v.id == vesselId)
                             {
-                                vesselWindows[vesselId] = new PartCommanderWindow(vesselNode.GetValueOrDefault("windowX", windowDefaultX), vesselNode.GetValueOrDefault("windowY", windowDefaultY), vesselNode.GetValueOrDefault("windowWidth", windowDefaultWidth), vesselNode.GetValueOrDefault("windowHeight", windowDefaultHeight));
+                                vesselWindows[vesselId] = new PCWindow(vesselNode.GetValueOrDefault("windowX", windowDefaultX), vesselNode.GetValueOrDefault("windowY", windowDefaultY), vesselNode.GetValueOrDefault("windowWidth", windowDefaultWidth), vesselNode.GetValueOrDefault("windowHeight", windowDefaultHeight));
                                 vesselWindows[vesselId].symLock = vesselNode.GetValueOrDefault("symLock", true);
                                 vesselWindows[vesselId].showPartSelector = false;
                                 vesselWindows[vesselId].currentPartId = partId;
@@ -51,7 +51,7 @@ namespace PartCommander
                                     foreach (ConfigNode pwNode in vesselNode.GetNode("PartWindows").nodes)
                                     {
                                         int windowId = int.Parse(pwNode.name);
-                                        PopOffWindow pow = new PopOffWindow(pwNode.GetValueOrDefault("windowX", windowDefaultX), pwNode.GetValueOrDefault("windowY", windowDefaultY), pwNode.GetValueOrDefault("windowWidth", windowDefaultWidth), pwNode.GetValueOrDefault("windowHeight", windowDefaultHeight));
+                                        PopOutWindow pow = new PopOutWindow(pwNode.GetValueOrDefault("windowX", windowDefaultX), pwNode.GetValueOrDefault("windowY", windowDefaultY), pwNode.GetValueOrDefault("windowWidth", windowDefaultWidth), pwNode.GetValueOrDefault("windowHeight", windowDefaultHeight));
                                         pow.windowId = windowId;
                                         pow.currentPartId = pwNode.GetValueOrDefault("currentPartId", 0u);
                                         pow.symLock = pwNode.GetValueOrDefault("symLock", true);
@@ -103,7 +103,7 @@ namespace PartCommander
                 n.AddValue("currentPartId", vesselWindows[g].currentPartId);
                 n.AddValue("symLock", vesselWindows[g].symLock);
                 ConfigNode partWindowsNode = n.AddNode("PartWindows");
-                foreach (PopOffWindow pow in vesselWindows[g].partWindows.Values)
+                foreach (PopOutWindow pow in vesselWindows[g].partWindows.Values)
                 {
                     ConfigNode pn = partWindowsNode.AddNode(pow.windowId.ToString());
                     pn.AddValue("windowX", pow.windowRect.x);

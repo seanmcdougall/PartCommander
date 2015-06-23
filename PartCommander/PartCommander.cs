@@ -45,14 +45,14 @@ namespace PartCommander
         private List<Part> activeParts = new List<Part>();
         private string partFilter = "";
 
-        private PartCommanderWindow currentWindow;
+        private PCWindow currentWindow;
 
         private bool visibleUI = true;
-        
+
         private bool controlsLocked = false;
         private string controlsLockID = "PartCommander_LockID";
 
-        private bool popOff = false;
+        private bool popOut = false;
 
         public static PartCommander Instance { get; private set; }
         public PartCommander()
@@ -64,6 +64,7 @@ namespace PartCommander
         public void Awake()
         {
             skin = SetupSkin();
+            SetupStyles();
 
             // Hook into events for Application Launcher
             GameEvents.onGUIApplicationLauncherReady.Add(OnGUIApplicationLauncherReady);
@@ -89,12 +90,12 @@ namespace PartCommander
             if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel.HoldPhysics == false)
             {
                 // Check to see if we already have a saved window, if not then create a new one
-                if (!PartCommanderScenario.Instance.gameSettings.vesselWindows.ContainsKey(FlightGlobals.ActiveVessel.id))
+                if (!PCScenario.Instance.gameSettings.vesselWindows.ContainsKey(FlightGlobals.ActiveVessel.id))
                 {
-                    PartCommanderScenario.Instance.gameSettings.vesselWindows.Add(FlightGlobals.ActiveVessel.id, new PartCommanderWindow());
+                    PCScenario.Instance.gameSettings.vesselWindows.Add(FlightGlobals.ActiveVessel.id, new PCWindow());
                 }
                 // Load the saved window
-                currentWindow = PartCommanderScenario.Instance.gameSettings.vesselWindows[FlightGlobals.ActiveVessel.id];
+                currentWindow = PCScenario.Instance.gameSettings.vesselWindows[FlightGlobals.ActiveVessel.id];
 
                 // If we don't have a selected part but we do have an id, then resurrect it
                 if (currentWindow.currentPart == null && currentWindow.currentPartId != 0u)
@@ -114,8 +115,10 @@ namespace PartCommander
                     }
                 }
 
-                foreach (PopOffWindow pow in currentWindow.partWindows.Values)
+                // Load any popout windows
+                foreach (PopOutWindow pow in currentWindow.partWindows.Values)
                 {
+                    // Resurrect the part if necessary
                     if (pow.currentPart == null & pow.currentPartId != 0u)
                     {
                         foreach (Part p in FlightGlobals.ActiveVessel.Parts)
@@ -134,16 +137,17 @@ namespace PartCommander
                     }
                 }
 
-                if (popOff)
+                // If a new popout window was requested, then create it
+                if (popOut)
                 {
                     if (currentWindow.currentPart != null)
                     {
-                        PopOffWindow pow = new PopOffWindow((Screen.width-currentWindow.windowRect.width)/2, (Screen.height-currentWindow.windowRect.height)/2, currentWindow.windowRect.width, currentWindow.windowRect.height);
+                        PopOutWindow pow = new PopOutWindow((Screen.width - currentWindow.windowRect.width) / 2, (Screen.height - currentWindow.windowRect.height) / 2, currentWindow.windowRect.width, currentWindow.windowRect.height);
                         pow.currentPart = currentWindow.currentPart;
                         pow.currentPartId = currentWindow.currentPartId;
                         currentWindow.partWindows.Add(pow.windowId, pow);
                     }
-                    popOff = false;
+                    popOut = false;
                 }
 
                 // The part selector button was clicked in the gui
@@ -163,7 +167,7 @@ namespace PartCommander
                     }
                     else
                     {
-                        // Show now have a selected part, but make sure it's not null and turn the part selector back on if it is.
+                        // Should now have a selected part, but make sure it's not null and turn the part selector back on if it is.
                         if (currentWindow.currentPart == null)
                         {
                             currentWindow.showPartSelector = true;
@@ -212,50 +216,37 @@ namespace PartCommander
                     currentWindow.selectPart = null;
                 }
 
-
-
             }
         }
 
         public void OnGUI()
         {
             // Make sure we have something to show
-
-            if (visibleUI)
+            if (visibleUI && FlightGlobals.ActiveVessel != null && currentWindow != null && PCScenario.Instance != null && PCScenario.Instance.gameSettings.visibleWindow)
             {
-                if (FlightGlobals.ActiveVessel != null)
+                GUI.skin = skin;
+                currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, "Part Commander");
+                // Set the default location/size for new windows to be the same as this one
+                PCScenario.Instance.gameSettings.windowDefaultRect = currentWindow.windowRect;
+
+                // Process any popout windows
+                foreach (PopOutWindow pow in currentWindow.partWindows.Values)
                 {
-                    if (currentWindow != null)
-                    {
-                        if (PartCommanderScenario.Instance != null)
-                        {
-                            if (PartCommanderScenario.Instance.gameSettings.visibleWindow)
-                            {
-                                GUI.skin = skin;
-                                currentWindow.windowRect = GUILayout.Window(currentWindow.windowId, currentWindow.windowRect, mainWindow, "Part Commander");
-                                // Set the default location/size for new windows to be the same as this one
-                                PartCommanderScenario.Instance.gameSettings.windowDefaultRect = currentWindow.windowRect;
-
-                                foreach (PopOffWindow pow in currentWindow.partWindows.Values)
-                                {
-                                    pow.windowRect = GUILayout.Window(pow.windowId, pow.windowRect, partWindow, "Part Commander");
-                                }
-                            }
-                        }
-
-                    }
+                    pow.windowRect = GUILayout.Window(pow.windowId, pow.windowRect, partWindow, "Part Commander");
                 }
             }
         }
 
+        // Remove the launcher button when the scene changes
         public void onSceneChange(GameScenes scene)
         {
             removeLauncherButton();
         }
 
+        // Cleanup when the module is destroyed
         protected void OnDestroy()
         {
-            PartCommanderScenario.Instance.gameSettings.visibleWindow = false;
+            PCScenario.Instance.gameSettings.visibleWindow = false;
             GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
             GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
             removeLauncherButton();
@@ -275,13 +266,13 @@ namespace PartCommander
             return img;
         }
 
-        private GUIStyle GetToggleButtonStyle(string styleName,int width,int height, bool hover)
+        private GUIStyle GetToggleButtonStyle(string styleName, int width, int height, bool hover)
         {
             GUIStyle myStyle = new GUIStyle();
             Texture2D styleOff = GetImage("PartCommander/textures/" + styleName + "_off", width, height);
             Texture2D styleOn = GetImage("PartCommander/textures/" + styleName + "_on", width, height);
 
-            myStyle.name = styleName+"Button";
+            myStyle.name = styleName + "Button";
             myStyle.padding = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
             myStyle.border = new RectOffset() { left = 0, right = 0, top = 0, bottom = 0 };
             myStyle.margin = new RectOffset() { left = 0, right = 0, top = 2, bottom = 2 };
@@ -299,7 +290,6 @@ namespace PartCommander
 
         private GUISkin SetupSkin()
         {
-            // Setup skin
             GUISkin skin = GameObject.Instantiate(HighLogic.Skin) as GUISkin;
 
             skin.button.padding = new RectOffset() { left = 1, right = 1, top = 3, bottom = 2 };
@@ -308,13 +298,6 @@ namespace PartCommander
 
             skin.label.padding.top = 0;
             skin.label.fontSize = fontSize;
-
-            centeredLabelStyle = new GUIStyle();
-            centeredLabelStyle.name = "centeredLabel";
-            centeredLabelStyle.fontSize = fontSize + 2;
-            centeredLabelStyle.alignment = TextAnchor.MiddleCenter;
-            centeredLabelStyle.wordWrap = true;
-            centeredLabelStyle.normal.textColor = XKCDColors.White;
 
             skin.verticalScrollbar.fixedWidth = 10f;
 
@@ -325,13 +308,23 @@ namespace PartCommander
             skin.window.padding.left = skin.window.padding.right = skin.window.padding.bottom = 2;
             skin.window.fontSize = (fontSize + 2);
 
+            return (skin);
+        }
+
+        private void SetupStyles()
+        {
             resizeButtonStyle = GetToggleButtonStyle("resize", 20, 20, true);
             symLockButtonStyle = GetToggleButtonStyle("symlock", 20, 20, false);
             azButtonStyle = GetToggleButtonStyle("az", 20, 20, false);
-            closeButtonStyle = GetToggleButtonStyle("close", 10, 10, true);
+            closeButtonStyle = GetToggleButtonStyle("close", 15, 15, true);
             popoutButtonStyle = GetToggleButtonStyle("popout", 20, 20, true);
-            
-            return (skin);
+
+            centeredLabelStyle = new GUIStyle();
+            centeredLabelStyle.name = "centeredLabel";
+            centeredLabelStyle.fontSize = fontSize + 2;
+            centeredLabelStyle.alignment = TextAnchor.MiddleCenter;
+            centeredLabelStyle.wordWrap = true;
+            centeredLabelStyle.normal.textColor = XKCDColors.BrightYellow;
         }
 
         // ------------------------------------------ Application Launcher / UI ---------------------------------------
@@ -339,7 +332,7 @@ namespace PartCommander
         {
             if (launcherButton == null)
             {
-                launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, GetImage("PartCommander/textures/toolbar",38,38));
+                launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, GetImage("PartCommander/textures/toolbar", 38, 38));
             }
         }
 
@@ -355,21 +348,21 @@ namespace PartCommander
 
         public void showWindow()  // triggered by toolbar
         {
-            PartCommanderScenario.Instance.gameSettings.visibleWindow = true;
+            PCScenario.Instance.gameSettings.visibleWindow = true;
         }
 
         public void hideWindow() // triggered by toolbar
         {
-            PartCommanderScenario.Instance.gameSettings.visibleWindow = false;
+            PCScenario.Instance.gameSettings.visibleWindow = false;
         }
 
         private void resizeWindow()
         {
+            // Resize main window
             if (Input.GetMouseButtonUp(0))
             {
                 currentWindow.resizingWindow = false;
             }
-
             if (currentWindow.resizingWindow)
             {
                 currentWindow.windowRect.width = Input.mousePosition.x - currentWindow.windowRect.x + 10;
@@ -378,7 +371,8 @@ namespace PartCommander
                 currentWindow.windowRect.height = currentWindow.windowRect.height < minHeight ? minHeight : currentWindow.windowRect.height;
             }
 
-            foreach (PopOffWindow pow in currentWindow.partWindows.Values)
+            // Resize popout windows
+            foreach (PopOutWindow pow in currentWindow.partWindows.Values)
             {
                 if (Input.GetMouseButtonUp(0))
                 {
@@ -397,7 +391,7 @@ namespace PartCommander
 
         private void windowHover()
         {
-            // Lock camera controls when over window
+            // Lock camera controls and highlight active part when over window
             Vector2 mousePos = Input.mousePosition;
             mousePos.y = Screen.height - mousePos.y;
 
@@ -413,11 +407,11 @@ namespace PartCommander
                     overPart = currentWindow.currentPart;
                     overSymLock = currentWindow.symLock;
                 }
-                
+
             }
             else
             {
-                foreach (PopOffWindow pow in currentWindow.partWindows.Values)
+                foreach (PopOutWindow pow in currentWindow.partWindows.Values)
                 {
                     if (pow.windowRect.Contains(mousePos))
                     {
@@ -430,7 +424,7 @@ namespace PartCommander
 
             if (controlsLocked)
             {
-                if (visibleUI && PartCommanderScenario.Instance.gameSettings.visibleWindow && overWindow)
+                if (visibleUI && PCScenario.Instance.gameSettings.visibleWindow && overWindow)
                 {
                     if (overPart != null)
                     {
@@ -446,7 +440,7 @@ namespace PartCommander
             }
             else
             {
-                if (visibleUI && PartCommanderScenario.Instance.gameSettings.visibleWindow && overWindow)
+                if (visibleUI && PCScenario.Instance.gameSettings.visibleWindow && overWindow)
                 {
                     InputLockManager.SetControlLock(ControlTypes.CAMERACONTROLS, controlsLockID);
                     controlsLocked = true;
@@ -488,9 +482,9 @@ namespace PartCommander
                 if (GUILayout.Button(partSelectorLabel))
                 {
                     currentWindow.togglePartSelector = true;
-                }    
+                }
             }
-            
+
             // Main area
             currentWindow.scrollPos = GUILayout.BeginScrollView(currentWindow.scrollPos);
 
@@ -509,7 +503,7 @@ namespace PartCommander
             }
 
             GUILayout.EndScrollView();
-            
+
             GUILayout.Space(5f);
             if (currentWindow.currentPart == null)
             {
@@ -518,7 +512,7 @@ namespace PartCommander
                 GUILayout.EndHorizontal();
                 GUILayout.Space(5f);
             }
-            
+
             GUILayout.BeginHorizontal();
             showSettings(currentWindow);
             GUILayout.EndHorizontal();
@@ -536,7 +530,7 @@ namespace PartCommander
 
         public void partWindow(int id)
         {
-            PopOffWindow currentPOW = currentWindow.partWindows[id];
+            PopOutWindow currentPOW = currentWindow.partWindows[id];
             if (currentPOW.currentPart == null)
             {
                 currentWindow.partWindows.Remove(id);
@@ -548,7 +542,7 @@ namespace PartCommander
             int optionsCount = 0;
 
             GUILayout.BeginVertical();
-            GUILayout.Label(partWindowTitle,centeredLabelStyle);
+            GUILayout.Label(partWindowTitle, centeredLabelStyle);
 
             // Main area
             currentPOW.scrollPos = GUILayout.BeginScrollView(currentPOW.scrollPos);
@@ -576,7 +570,7 @@ namespace PartCommander
             }
 
             // Create close button in upper right corner
-            if (GUI.Button(new Rect(currentPOW.windowRect.width - 13, 3f, 10f, 10f), "", closeButtonStyle))
+            if (GUI.Button(new Rect(currentPOW.windowRect.width - 18, 3f, 15f, 15f), "", closeButtonStyle))
             {
                 currentWindow.partWindows.Remove(currentPOW.windowId);
             }
@@ -873,21 +867,24 @@ namespace PartCommander
             if (PhysicsGlobals.ThermalDataDisplay)
             {
                 GUILayout.Label("Thermal Mass: " + string.Format("{0:N2}", Math.Round(p.thermalMass, 2)));
+                GUILayout.Label("Skin T.Mass: " + string.Format("{0:N2}", Math.Round(p.skinThermalMass, 2)));
                 GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(p.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(p.maxTemp)));
-                //GUILayout.Label("Temp Ext: " + string.Format("{0:N2}", Math.Round(p.externalTemperature, 2)));
+                GUILayout.Label("Skin Temp: " + string.Format("{0:N2}", Math.Round(p.skinTemperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(p.skinMaxTemp)));
                 GUILayout.Label("Cond Flux: " + string.Format("{0:N2}", Math.Round(p.thermalConductionFlux, 2)));
                 GUILayout.Label("Conv Flux: " + string.Format("{0:N2}", Math.Round(p.thermalConvectionFlux, 2)));
                 GUILayout.Label("Rad Flux: " + string.Format("{0:N2}", Math.Round(p.thermalRadiationFlux, 2)));
                 GUILayout.Label("Int Flux: " + string.Format("{0:N2}", Math.Round(p.thermalInternalFlux, 2)));
+                GUILayout.Label("SkinToInt Flux: " + string.Format("{0:N2}", Math.Round(p.skinToInternalFlux, 2)));
             }
             else
             {
                 GUILayout.Label("Temp: " + string.Format("{0:N2}", Math.Round(p.temperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(p.maxTemp)));
+                GUILayout.Label("Skin Temp: " + string.Format("{0:N2}", Math.Round(p.skinTemperature, 2)) + " / " + string.Format("{0:N2}", Math.Round(p.skinMaxTemp)));
             }
         }
 
         // Display settings
-        private void showSettings(PartCommanderWindow w)
+        private void showSettings(PCWindow w)
         {
             bool oldSymLock = w.symLock;
             w.symLock = GUILayout.Toggle(w.symLock, "", symLockButtonStyle);
@@ -910,18 +907,19 @@ namespace PartCommander
             }
 
             // Part pop-off
-            if (w.currentPart != null)
+            if (w.currentPart != null && activeParts.Count > 0)
             {
                 if (GUILayout.Button("", popoutButtonStyle))
                 {
                     w.togglePartSelector = true;
-                    popOff = true;
+                    popOut = true;
                 }
             }
-            
+
+
         }
 
-        private void showPartSettings(PopOffWindow pow)
+        private void showPartSettings(PopOutWindow pow)
         {
             bool oldSymLock = pow.symLock;
             pow.symLock = GUILayout.Toggle(pow.symLock, "", symLockButtonStyle);
