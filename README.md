@@ -1,6 +1,11 @@
 # Part Commander
 Plugin for Kerbal Space Program (KSP).  Creates a window that allows for easy control of all parts on the current vessel.
 
+0.9.2 - 2015/06/23
+- updated to support KSP 1.0.3/1.0.4
+- added filtering/sorting options
+- added ability to "pop off" parts into their own windows
+
 0.9.1.1 - 2015/06/08
 - fixes a bug where the window would get corrupted if the selected part was destroyed
 
