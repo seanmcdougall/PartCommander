@@ -968,6 +968,7 @@ namespace PartCommander
             {
                 multiEngineMode = mme.mode;
             }
+
             return multiEngineMode;
         }
 
@@ -975,7 +976,7 @@ namespace PartCommander
         {
             bool modeMatches = true;
             ModuleEnginesFX mefx = null;
-            if (pm.GetType().ToString() == "ModuleEnginesFX")
+            if (multiEngineMode != null && pm.GetType().ToString() == "ModuleEnginesFX")
             {
                 mefx = (ModuleEnginesFX)pm;
                 modeMatches = (multiEngineMode == mefx.engineID) ? true : false;
