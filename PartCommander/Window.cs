@@ -17,6 +17,9 @@ namespace PartCommander
         internal bool symLock = true;
         internal bool alphaSort = false;
         internal bool showPartSelector = true;
+        internal bool showResources = true;
+        internal bool showTemp = false;
+        internal bool showAero = false;
         internal int windowId;
         internal bool togglePartSelector = false;
         internal Vector2 scrollPos = new Vector2(0f, 0f);

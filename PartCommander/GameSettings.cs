@@ -44,6 +44,9 @@ namespace PartCommander
                                 vesselWindows[vesselId] = new PCWindow(vesselNode.GetValueOrDefault("windowX", windowDefaultX), vesselNode.GetValueOrDefault("windowY", windowDefaultY), vesselNode.GetValueOrDefault("windowWidth", windowDefaultWidth), vesselNode.GetValueOrDefault("windowHeight", windowDefaultHeight));
                                 vesselWindows[vesselId].symLock = vesselNode.GetValueOrDefault("symLock", true);
                                 vesselWindows[vesselId].showPartSelector = false;
+                                vesselWindows[vesselId].showResources = vesselNode.GetValueOrDefault("showResources", true);
+                                vesselWindows[vesselId].showTemp = vesselNode.GetValueOrDefault("showTemp", false);
+                                vesselWindows[vesselId].showAero = vesselNode.GetValueOrDefault("showAero", false);
                                 vesselWindows[vesselId].currentPartId = partId;
 
                                 if (vesselNode.HasNode("PartWindows"))
@@ -55,6 +58,9 @@ namespace PartCommander
                                         pow.windowId = windowId;
                                         pow.currentPartId = pwNode.GetValueOrDefault("currentPartId", 0u);
                                         pow.symLock = pwNode.GetValueOrDefault("symLock", true);
+                                        pow.showResources = pwNode.GetValueOrDefault("showResources", true);
+                                        pow.showTemp = pwNode.GetValueOrDefault("showTemp", false);
+                                        pow.showAero = pwNode.GetValueOrDefault("showAero", false);
                                         vesselWindows[vesselId].partWindows.Add(windowId, pow);
                                     }
                                 }
@@ -102,6 +108,8 @@ namespace PartCommander
                 n.AddValue("windowHeight", vesselWindows[g].windowRect.height);
                 n.AddValue("currentPartId", vesselWindows[g].currentPartId);
                 n.AddValue("symLock", vesselWindows[g].symLock);
+                n.AddValue("showTemp", vesselWindows[g].showTemp);
+                n.AddValue("showAero", vesselWindows[g].showAero);
                 ConfigNode partWindowsNode = n.AddNode("PartWindows");
                 foreach (PopOutWindow pow in vesselWindows[g].partWindows.Values)
                 {
@@ -112,6 +120,9 @@ namespace PartCommander
                     pn.AddValue("windowHeight", pow.windowRect.height);
                     pn.AddValue("currentPartId", pow.currentPartId);
                     pn.AddValue("symLock", pow.symLock);
+                    pn.AddValue("showResources", pow.showResources);
+                    pn.AddValue("showTemp", pow.showTemp);
+                    pn.AddValue("showAero", pow.showAero);
                 }
 
             }

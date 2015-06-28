@@ -54,6 +54,7 @@
     <Compile Include="AddScenarioModules.cs" />
     <Compile Include="ConfigNodeExtensions.cs" />
     <Compile Include="GameSettings.cs" />
+    <Compile Include="ModStyle.cs" />
     <Compile Include="PartCommander.cs" />
     <Compile Include="PopOutWindow.cs" />
     <Compile Include="Window.cs" />
@@ -63,6 +64,12 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <Content Include="textures\aero_off.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\aero_on.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="textures\az_off.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -87,10 +94,22 @@
     <Content Include="textures\resize_on.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="textures\resources_off.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\resources_on.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="textures\symlock_off.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="textures\symlock_on.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\temp_off.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\temp_on.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="textures\toolbar.png">
