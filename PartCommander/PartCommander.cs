@@ -80,7 +80,7 @@ namespace PartCommander
         public void Update()
         {
             // Only proceed if a vessel is active and physics have stablized
-            if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel.HoldPhysics == false)
+            if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel.HoldPhysics == false && PCScenario.Instance != null)
             {
                 // Check to see if we already have a saved window, if not then create a new one
                 if (!PCScenario.Instance.gameSettings.vesselWindows.ContainsKey(FlightGlobals.ActiveVessel.id))
@@ -89,7 +89,6 @@ namespace PartCommander
                 }
                 // Load the saved window
                 currentWindow = PCScenario.Instance.gameSettings.vesselWindows[FlightGlobals.ActiveVessel.id];
-
                 // If we don't have a selected part but we do have an id, then resurrect it
                 if (currentWindow.currentPart == null && currentWindow.currentPartId != 0u)
                 {
@@ -129,7 +128,6 @@ namespace PartCommander
                         }
                     }
                 }
-
                 // If a new popout window was requested, then create it
                 if (popOut)
                 {
@@ -448,7 +446,6 @@ namespace PartCommander
             }
 
             GUILayout.EndScrollView();
-
             GUILayout.Space(5f);
             if (w.currentPart == null && w.popOutWindow == false)
             {
