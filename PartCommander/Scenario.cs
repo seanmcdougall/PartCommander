@@ -10,12 +10,12 @@ namespace PartCommander
     {
 
         public static PCScenario Instance { get; private set; }
-        public GameSettings gameSettings { get; private set; }
+        public ModSettings gameSettings { get; private set; }
 
         public PCScenario()
         {
             Instance = this;
-            gameSettings = new GameSettings();
+            gameSettings = new ModSettings();
         }
 
         public override void OnLoad(ConfigNode gameNode)

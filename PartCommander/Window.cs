@@ -10,6 +10,7 @@ namespace PartCommander
 {
     public class PCWindow
     {
+        internal bool popOutWindow = false;
         internal Rect windowRect;
         internal bool resizingWindow = false;
         internal Part currentPart = null;
@@ -24,27 +25,30 @@ namespace PartCommander
         internal bool togglePartSelector = false;
         internal Vector2 scrollPos = new Vector2(0f, 0f);
         internal Part selectPart = null;
-        internal Dictionary<int, PopOutWindow> partWindows;
+        internal Dictionary<int, PCWindow> partWindows;
 
-        public PCWindow(float x, float y, float width, float height)
+        public PCWindow(float x, float y, float width, float height, bool popOut)
         {
             windowRect = new Rect(x, y, width, height);
             windowId = GUIUtility.GetControlID(FocusType.Passive);
-            partWindows = new Dictionary<int, PopOutWindow>();
+            partWindows = new Dictionary<int, PCWindow>();
+            popOutWindow = popOut;
         }
 
-        public PCWindow(Rect r)
+        public PCWindow(Rect r, bool popOut)
         {
             windowRect = r;
             windowId = GUIUtility.GetControlID(FocusType.Passive);
-            partWindows = new Dictionary<int, PopOutWindow>();
+            partWindows = new Dictionary<int, PCWindow>();
+            popOutWindow = popOut;
         }
 
-        public PCWindow()
+        public PCWindow(bool popOut)
         {
             windowRect = PCScenario.Instance.gameSettings.windowDefaultRect;
             windowId = GUIUtility.GetControlID(FocusType.Passive);
-            partWindows = new Dictionary<int, PopOutWindow>();
+            partWindows = new Dictionary<int, PCWindow>();
+            popOutWindow = popOut;
         }
 
     }

@@ -18,7 +18,7 @@ namespace PartCommander
 
             skin = GameObject.Instantiate(HighLogic.Skin) as GUISkin;
 
-            skin.button.padding = new RectOffset() { left = 1, right = 1, top = 3, bottom = 2 };
+            skin.button.padding = new RectOffset() { left = 3, right = 3, top = 3, bottom = 3 };
             skin.button.wordWrap = true;
             skin.button.fontSize = fontSize;
 
