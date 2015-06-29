@@ -53,6 +53,7 @@ namespace PartCommander
             guiStyles["centeredLabel"].alignment = TextAnchor.MiddleCenter;
             guiStyles["centeredLabel"].wordWrap = true;
             guiStyles["centeredLabel"].normal.textColor = Color.yellow;
+            guiStyles["centeredLabel"].padding = new RectOffset() { left = 20, right = 20, top = 0, bottom = 0 };
 
         }
 

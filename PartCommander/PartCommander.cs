@@ -406,7 +406,7 @@ namespace PartCommander
         public void drawWindow(PCWindow w)
         {
             int optionsCount = 0;
-            
+
             GUILayout.BeginVertical();
             if (w.popOutWindow)
             {
@@ -417,6 +417,12 @@ namespace PartCommander
             {
                 GUILayout.Label(FlightGlobals.ActiveVessel.vesselName, modStyle.guiStyles["centeredLabel"]);
             }
+            GUILayout.EndVertical();
+            if (Event.current.type == EventType.Repaint)
+            {
+                w.dragRect = GUILayoutUtility.GetLastRect();
+            }
+            GUILayout.BeginVertical();
 
             if (w.currentPart != null && w.popOutWindow == false)
             {
@@ -427,7 +433,6 @@ namespace PartCommander
                     w.togglePartSelector = true;
                 }
             }
-
             // Main area
             w.scrollPos = GUILayout.BeginScrollView(w.scrollPos);
 
@@ -488,7 +493,8 @@ namespace PartCommander
             }
 
             // Make window draggable by title
-            GUI.DragWindow(new Rect(0, 0, 10000, 20));
+            //GUI.DragWindow(new Rect(0, 0, 10000, 100));
+            GUI.DragWindow(w.dragRect);
         }
 
         // ----------------------------------- Part Selector -------------------------------
@@ -578,19 +584,18 @@ namespace PartCommander
             foreach (Part p in activeParts)
             {
                 string partTitle = (currentWindow.symLock && p.symmetryCounterparts.Count() > 0) ? p.partInfo.title + " (x" + (p.symmetryCounterparts.Count() + 1) + ")" : p.partInfo.title;
-                if (GUILayout.Button(partTitle))
+                if (GUILayout.Button(new GUIContent(partTitle,p.flightID.ToString())))
                 {
                     currentWindow.selectPart = p;
                 }
-                if (Event.current.type == EventType.Repaint)
+                if (controlsLocked)
                 {
-                    if (GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    if (Event.current.type == EventType.Repaint)
                     {
-                        setHighlighting(p, currentWindow.symLock, true);
-                    }
-                    else
-                    {
-                        if (controlsLocked)
+                        if (GUI.tooltip == p.flightID.ToString()) { 
+                            setHighlighting(p, currentWindow.symLock, true);
+                        }
+                        else
                         {
                             setHighlighting(p, currentWindow.symLock, false);
                         }
@@ -898,7 +903,7 @@ namespace PartCommander
             }
             else
             {
-                p.SetHighlight(highlight,false);
+                p.SetHighlight(highlight, false);
                 if (symLock)
                 {
                     foreach (Part symPart in p.symmetryCounterparts)
@@ -906,9 +911,9 @@ namespace PartCommander
                         symPart.SetHighlight(highlight, false);
                     }
                 }
-                
+
             }
-            
+
         }
 
         private void clearHighlighting(List<Part> ap)

@@ -1,6 +1,12 @@
 # Part Commander
 Plugin for Kerbal Space Program (KSP).  Creates a window that allows for easy control of all parts on the current vessel.
 
+0.9.3.0 - 2015/06/28
+- bug fixes
+- more gui changes
+- toggles for resources, temp and aero info
+- now uses new edge highlighting system
+
 0.9.2.1 - 2015/06/23
 - fixed bug affecting jet engines
 

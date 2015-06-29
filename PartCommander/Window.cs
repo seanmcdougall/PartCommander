@@ -12,6 +12,7 @@ namespace PartCommander
     {
         internal bool popOutWindow = false;
         internal Rect windowRect;
+        internal Rect dragRect;
         internal bool resizingWindow = false;
         internal Part currentPart = null;
         internal uint currentPartId;
