@@ -5,8 +5,6 @@ Copyright 2015, Sean McDougall
 
 GitHub: https://github.com/seanmcdougall/PartCommander
 
-1.0.0.0 - 2015/07/01
-- first official release
 
 0.9.3.0 - 2015/06/28
 - bug fixes
