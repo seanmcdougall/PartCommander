@@ -1,4 +1,7 @@
-﻿using System;
+﻿// AddScenarioModule.cs
+// Adds the scenario module on startup
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,7 +10,7 @@ using UnityEngine;
 namespace PartCommander
 {
     [KSPAddon(KSPAddon.Startup.SpaceCentre, false)]
-    public class AddScenarioModules : MonoBehaviour
+    public class AddScenarioModule : MonoBehaviour
     {
         void Start()
         {

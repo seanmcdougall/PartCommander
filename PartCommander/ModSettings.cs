@@ -1,4 +1,6 @@
-﻿// Stores settings for Part Commander
+﻿// ModSettings.cs
+// Handles saving/loading settings
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;

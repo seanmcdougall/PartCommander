@@ -31,11 +31,9 @@ namespace PartCommander
     {
         internal ApplicationLauncherButton launcherButton = null;
 
-        private int minWidth = 100;
-        private int minHeight = 100;
-
         private List<Part> activeParts = new List<Part>();
         private string partFilter = "";
+        private bool updateParts = true;
 
         private PCWindow currentWindow;
 
@@ -54,7 +52,7 @@ namespace PartCommander
             Instance = this;
         }
 
-        // ------------------------------- Unity Events --------------------------------
+        // ------------------------------- Main Events --------------------------------
         public void Awake()
         {
             modStyle = new ModStyle();
@@ -75,6 +73,15 @@ namespace PartCommander
             {
                 OnGUIApplicationLauncherReady();
             }
+
+            // Add hooks for updating part list when needed
+            GameEvents.onVesselWasModified.Add(triggerUpdateParts);
+            GameEvents.onVesselChange.Add(triggerUpdateParts);
+        }
+
+        public void triggerUpdateParts(Vessel v)
+        {
+            updateParts = true;
         }
 
         public void Update()
@@ -152,10 +159,6 @@ namespace PartCommander
                     if (currentWindow.showPartSelector)
                     {
                         // Showing part selector now... clear out any selected part info.
-                        if (currentWindow.currentPart != null)
-                        {
-                            GameEvents.onPartActionUIDismiss.Fire(currentWindow.currentPart);
-                        }
                         currentWindow.currentPart = null;
                         currentWindow.currentPartId = 0u;
                     }
@@ -168,6 +171,7 @@ namespace PartCommander
                         }
                     }
                     currentWindow.togglePartSelector = false;
+                    updateParts = true;
                 }
 
                 // Make sure the selected part still exists and is part of the active vessel, otherwise clear it out and reenable the part selector.
@@ -189,7 +193,11 @@ namespace PartCommander
 
                 resizeWindows();
                 windowHover();
-                getActiveParts();
+                if (updateParts)
+                {
+                    getActiveParts();
+                }
+                
 
                 // If there's only one available part on the vessel, select it automatically.
                 if (currentWindow.showPartSelector && activeParts.Count == 1 && partFilter == "")
@@ -202,7 +210,6 @@ namespace PartCommander
                 {
                     if (currentWindow.selectPart.vessel == FlightGlobals.ActiveVessel)
                     {
-                        GameEvents.onPartActionUICreate.Fire(currentWindow.selectPart);
                         currentWindow.currentPart = currentWindow.selectPart;
                         currentWindow.currentPartId = currentWindow.selectPart.flightID;
                         currentWindow.showPartSelector = false;
@@ -312,9 +319,9 @@ namespace PartCommander
             if (w.resizingWindow)
             {
                 w.windowRect.width = Input.mousePosition.x - w.windowRect.x + 10;
-                w.windowRect.width = w.windowRect.width < minWidth ? minWidth : w.windowRect.width;
+                w.windowRect.width = w.windowRect.width < modStyle.minWidth ? modStyle.minWidth : w.windowRect.width;
                 w.windowRect.height = (Screen.height - Input.mousePosition.y) - w.windowRect.y + 10;
-                w.windowRect.height = w.windowRect.height < minHeight ? minHeight : w.windowRect.height;
+                w.windowRect.height = w.windowRect.height < modStyle.minHeight ? modStyle.minHeight : w.windowRect.height;
             }
         }
 
@@ -365,6 +372,11 @@ namespace PartCommander
                     InputLockManager.RemoveControlLock(controlsLockID);
                     controlsLocked = false;
                     clearHighlighting(activeParts);
+                    if (overPart != null)
+                    {
+                        GameEvents.onPartActionUIDismiss.Fire(overPart);
+                    }
+                    
                 }
             }
             else
@@ -377,6 +389,7 @@ namespace PartCommander
                     if (overPart != null)
                     {
                         setHighlighting(overPart, overSymLock, true);
+                        GameEvents.onPartActionUICreate.Fire(overPart);
                     }
                 }
                 else
@@ -563,6 +576,7 @@ namespace PartCommander
             {
                 activeParts = activeParts.OrderBy(o => o.partInfo.title).ToList();
             }
+            updateParts = false;
         }
 
         private bool partMatch(Part p)

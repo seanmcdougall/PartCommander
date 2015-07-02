@@ -1,4 +1,7 @@
-﻿using System;
+﻿// StringExtensions.cs
+// Adds some extra string methods
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;

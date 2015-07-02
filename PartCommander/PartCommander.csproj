@@ -51,7 +51,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AddScenarioModules.cs" />
+    <Compile Include="AddScenarioModule.cs" />
     <Compile Include="ConfigNodeExtensions.cs" />
     <Compile Include="ModSettings.cs" />
     <Compile Include="ModStyle.cs" />

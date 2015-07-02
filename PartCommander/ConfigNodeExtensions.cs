@@ -1,4 +1,5 @@
-﻿// Extensions to the standard ConfigNode class to handle defaults and converting to different types
+﻿// ConfigNodeExtensions.cs
+// Extensions to the standard ConfigNode class to handle defaults and converting to different types
 
 using System;
 using System.Collections.Generic;

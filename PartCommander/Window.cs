@@ -1,4 +1,5 @@
-﻿// Stores settings for a particular vessel/part window
+﻿// Window.cs
+// Stores settings for a particular vessel/part window
 
 using System;
 using System.Collections.Generic;

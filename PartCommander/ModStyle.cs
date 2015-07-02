@@ -1,4 +1,7 @@
-﻿using System;
+﻿// ModStyle.cs
+// Skin and style settings
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +14,8 @@ namespace PartCommander
         public GUISkin skin;
         public Dictionary<string, GUIStyle> guiStyles;
         public int fontSize = 12;
+        public int minWidth = 100;
+        public int minHeight = 100;
 
         public ModStyle()
         {
@@ -33,9 +38,7 @@ namespace PartCommander
             skin.window.onActive.textColor = skin.window.active.textColor = Color.blue;
             skin.window.padding.left = skin.window.padding.right = skin.window.padding.bottom = 2;
             skin.window.fontSize = (fontSize + 2);
-            //skin.window.border = skin.scrollView.border = new RectOffset() { left = 1, top = 1, right = 1, bottom = 1 };
             skin.window.padding = new RectOffset() { left = 1, top = 5, right = 1, bottom = 1 };
-            //skin.scrollView.padding = new RectOffset() { left = 1, top = 1, right = 1, bottom = 1 };
 
             guiStyles["resizeButton"] = GetToggleButtonStyle("resize", 20, 20, true);
             guiStyles["symLockButton"] = GetToggleButtonStyle("symlock", 20, 20, false);
