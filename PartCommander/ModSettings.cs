@@ -25,10 +25,10 @@ namespace PartCommander
             if (node.HasNode("PartCommanderGameSettings"))
             {
                 SettingsNode = node.GetNode("PartCommanderGameSettings");
-                windowDefaultX = SettingsNode.GetValueOrDefault("windowDefaultX", windowDefaultX);
-                windowDefaultY = SettingsNode.GetValueOrDefault("windowDefaultY", windowDefaultY);
-                windowDefaultWidth = SettingsNode.GetValueOrDefault("windowDefaultWidth", windowDefaultWidth);
-                windowDefaultHeight = SettingsNode.GetValueOrDefault("windowDefaultHeight", windowDefaultHeight);
+                windowDefaultX = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultX", windowDefaultX),0,Screen.width-50);
+                windowDefaultY = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultY", windowDefaultY),0,Screen.height-50);
+                windowDefaultWidth = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultWidth", windowDefaultWidth),50,Screen.width);
+                windowDefaultHeight = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultHeight", windowDefaultHeight),50,Screen.height);
                 windowDefaultRect = new Rect(windowDefaultX, windowDefaultY, windowDefaultWidth, windowDefaultHeight);
                 visibleWindow = SettingsNode.GetValueOrDefault("visibleWindow", visibleWindow);
 

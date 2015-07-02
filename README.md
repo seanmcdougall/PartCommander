@@ -1,5 +1,5 @@
 # Part Commander
-Plugin for Kerbal Space Program (KSP).  Consolidates all right-click action menus from parts on the current vessel into a single interface.
+Plugin for Kerbal Space Program (KSP).  Consolidates right-click action menus from all parts on the current vessel into a single interface.
 
 Copyright 2015, Sean McDougall
 

@@ -86,8 +86,8 @@ namespace PartCommander
 
         public void Update()
         {
-            // Only proceed if a vessel is active and physics have stablized
-            if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel.HoldPhysics == false && PCScenario.Instance != null)
+            // Only proceed if a vessel is active, physics have stablized, and window is visible
+            if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel.HoldPhysics == false && PCScenario.Instance != null && visibleUI && PCScenario.Instance.gameSettings.visibleWindow)
             {
                 // Check to see if we already have a saved window, if not then create a new one
                 if (!PCScenario.Instance.gameSettings.vesselWindows.ContainsKey(FlightGlobals.ActiveVessel.id))
@@ -319,9 +319,9 @@ namespace PartCommander
             if (w.resizingWindow)
             {
                 w.windowRect.width = Input.mousePosition.x - w.windowRect.x + 10;
-                w.windowRect.width = w.windowRect.width < modStyle.minWidth ? modStyle.minWidth : w.windowRect.width;
+                w.windowRect.width = Mathf.Clamp(w.windowRect.width,modStyle.minWidth,Screen.width);
                 w.windowRect.height = (Screen.height - Input.mousePosition.y) - w.windowRect.y + 10;
-                w.windowRect.height = w.windowRect.height < modStyle.minHeight ? modStyle.minHeight : w.windowRect.height;
+                w.windowRect.height = Mathf.Clamp(w.windowRect.height, modStyle.minHeight, Screen.height);
             }
         }
 
