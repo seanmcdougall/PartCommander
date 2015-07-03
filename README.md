@@ -4,6 +4,9 @@ Plugin for Kerbal Space Program (KSP).  Access the right-click action menus from
 Copyright 2015, Sean McDougall
 
 GitHub: https://github.com/seanmcdougall/PartCommander
+KSP Forum: http://forum.kerbalspaceprogram.com/threads/127575
+KerbalStuff: http://www.kerbalstuff.com/mod/965/Part%20Commander
+Curse: coming soon
 
 1.0.0.0 - 2015/07/02
 - more bug fixes
