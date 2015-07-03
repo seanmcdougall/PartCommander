@@ -1,2 +1,1 @@
-- clear any active highlighting before switching vessels
-- add multiple "popoff" part monitoring windows
+- nothing at the moment

@@ -195,6 +195,7 @@ namespace PartCommander
                 windowHover();
                 if (updateParts)
                 {
+                    clearHighlighting(activeParts);
                     getActiveParts();
                 }
                 
