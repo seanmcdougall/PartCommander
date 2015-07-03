@@ -905,7 +905,8 @@ namespace PartCommander
                             {
                                 if (highlight)
                                 {
-                                    symH.ConstantOn(XKCDColors.LightOrange);
+                                    // Highlight the secondary symmetrical parts in a different colour
+                                    symH.ConstantOn(XKCDColors.Yellow);
                                 }
                                 else
                                 {
