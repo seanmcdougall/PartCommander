@@ -61,7 +61,11 @@
     <Compile Include="Scenario.cs" />
     <Compile Include="StringExtensions.cs" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <None Include="PartCommander.version">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
   <ItemGroup>
     <Content Include="textures\aero_off.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
