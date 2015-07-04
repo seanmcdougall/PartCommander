@@ -58,6 +58,11 @@ namespace PartCommander
             guiStyles["centeredLabel"].normal.textColor = Color.yellow;
             guiStyles["centeredLabel"].padding = new RectOffset() { left = 20, right = 20, top = 0, bottom = 0 };
 
+            guiStyles["tooltip"] = new GUIStyle();
+            guiStyles["tooltip"].name = "tooltip";
+            guiStyles["tooltip"].fontSize = fontSize+3;
+            guiStyles["tooltip"].normal.textColor = Color.yellow;
+
         }
 
         public Texture2D GetImage(String path, int width, int height)

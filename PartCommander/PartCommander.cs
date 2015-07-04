@@ -46,6 +46,8 @@ namespace PartCommander
 
         private ModStyle modStyle;
 
+        private string showTooltip = "";
+
         public static PartCommander Instance { get; private set; }
         public PartCommander()
         {
@@ -198,7 +200,7 @@ namespace PartCommander
                     clearHighlighting(activeParts);
                     getActiveParts();
                 }
-                
+
 
                 // If there's only one available part on the vessel, select it automatically.
                 if (currentWindow.showPartSelector && activeParts.Count == 1 && partFilter == "")
@@ -237,6 +239,12 @@ namespace PartCommander
                 {
                     pow.windowRect = GUILayout.Window(pow.windowId, pow.windowRect, partWindow, "");
                 }
+                if (showTooltip != "" && showTooltip != null)
+                {
+                    GUI.Label(new Rect(Input.mousePosition.x + 10, Screen.height - Input.mousePosition.y + 20, showTooltip.Length * 10, 20), showTooltip, modStyle.guiStyles["tooltip"]);
+                    GUI.depth = 0;
+                }
+
             }
         }
 
@@ -320,7 +328,7 @@ namespace PartCommander
             if (w.resizingWindow)
             {
                 w.windowRect.width = Input.mousePosition.x - w.windowRect.x + 10;
-                w.windowRect.width = Mathf.Clamp(w.windowRect.width,modStyle.minWidth,Screen.width);
+                w.windowRect.width = Mathf.Clamp(w.windowRect.width, modStyle.minWidth, Screen.width);
                 w.windowRect.height = (Screen.height - Input.mousePosition.y) - w.windowRect.y + 10;
                 w.windowRect.height = Mathf.Clamp(w.windowRect.height, modStyle.minHeight, Screen.height);
             }
@@ -377,7 +385,7 @@ namespace PartCommander
                     {
                         GameEvents.onPartActionUIDismiss.Fire(overPart);
                     }
-                    
+
                 }
             }
             else
@@ -484,7 +492,7 @@ namespace PartCommander
             // Create part popout button in upper left corner
             if (w.currentPart != null && activeParts.Count > 0 && w.popOutWindow == false)
             {
-                if (GUI.Button(new Rect(7, 3, 20, 20), "", modStyle.guiStyles["popoutButton"]))
+                if (GUI.Button(new Rect(7, 3, 20, 20), new GUIContent("", "Pop off in new window"), modStyle.guiStyles["popoutButton"]))
                 {
                     w.togglePartSelector = true;
                     popOut = true;
@@ -494,17 +502,41 @@ namespace PartCommander
             if (w.popOutWindow)
             {
                 // Create close button in upper right corner
-                if (GUI.Button(new Rect(w.windowRect.width - 18, 3f, 15f, 15f), "", modStyle.guiStyles["closeButton"]))
+                if (GUI.Button(new Rect(w.windowRect.width - 18, 3f, 15f, 15f), new GUIContent("", "Close"), modStyle.guiStyles["closeButton"]))
                 {
                     currentWindow.partWindows.Remove(w.windowId);
                 }
             }
 
             // Create resize button in bottom right corner
-            if (GUI.RepeatButton(new Rect(w.windowRect.width - 23, w.windowRect.height - 23, 20, 20), "", modStyle.guiStyles["resizeButton"]))
+            if (GUI.RepeatButton(new Rect(w.windowRect.width - 23, w.windowRect.height - 23, 20, 20), new GUIContent("", "Click and drag to resize"), modStyle.guiStyles["resizeButton"]))
             {
                 w.resizingWindow = true;
             }
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                if (GUI.tooltip != null && GUI.tooltip != "")
+                {
+                    // Filter out the tooltips that come from the part-list hover hack
+                    uint testIt;
+                    if (uint.TryParse(GUI.tooltip, out testIt))
+                    {
+                        showTooltip = "";
+                    }
+                    else
+                    {
+                        showTooltip = GUI.tooltip;
+                    }
+                    
+                }
+                else
+                {
+                    showTooltip = "";
+                }
+
+            }
+
 
             // Make window draggable by title
             //GUI.DragWindow(new Rect(0, 0, 10000, 100));
@@ -599,7 +631,7 @@ namespace PartCommander
             foreach (Part p in activeParts)
             {
                 string partTitle = (currentWindow.symLock && p.symmetryCounterparts.Count() > 0) ? p.partInfo.title + " (x" + (p.symmetryCounterparts.Count() + 1) + ")" : p.partInfo.title;
-                if (GUILayout.Button(new GUIContent(partTitle,p.flightID.ToString())))
+                if (GUILayout.Button(new GUIContent(partTitle, p.flightID.ToString())))
                 {
                     currentWindow.selectPart = p;
                 }
@@ -607,7 +639,8 @@ namespace PartCommander
                 {
                     if (Event.current.type == EventType.Repaint)
                     {
-                        if (GUI.tooltip == p.flightID.ToString()) { 
+                        if (GUI.tooltip == p.flightID.ToString())
+                        {
                             setHighlighting(p, currentWindow.symLock, true);
                         }
                         else
@@ -847,7 +880,7 @@ namespace PartCommander
         private void showSettings(PCWindow w)
         {
             bool oldSymLock = w.symLock;
-            w.symLock = GUILayout.Toggle(w.symLock, "", modStyle.guiStyles["symLockButton"]);
+            w.symLock = GUILayout.Toggle(w.symLock, new GUIContent("", "Symmetry"), modStyle.guiStyles["symLockButton"]);
             if (w.symLock != oldSymLock)
             {
                 if (w.currentPart != null)
@@ -864,14 +897,14 @@ namespace PartCommander
             {
                 if (w.popOutWindow == false)
                 {
-                    w.alphaSort = GUILayout.Toggle(w.alphaSort, "", modStyle.guiStyles["azButton"]);
+                    w.alphaSort = GUILayout.Toggle(w.alphaSort, new GUIContent("", "Alphabetical Sort"), modStyle.guiStyles["azButton"]);
                 }
             }
             else
             {
-                w.showResources = GUILayout.Toggle(w.showResources, "", modStyle.guiStyles["resourcesButton"]);
-                w.showTemp = GUILayout.Toggle(w.showTemp, "", modStyle.guiStyles["tempButton"]);
-                w.showAero = GUILayout.Toggle(w.showAero, "", modStyle.guiStyles["aeroButton"]);
+                w.showResources = GUILayout.Toggle(w.showResources, new GUIContent("", "Resources Display"), modStyle.guiStyles["resourcesButton"]);
+                w.showTemp = GUILayout.Toggle(w.showTemp, new GUIContent("", "Temperature Display"), modStyle.guiStyles["tempButton"]);
+                w.showAero = GUILayout.Toggle(w.showAero, new GUIContent("", "Aerodynamics Display"), modStyle.guiStyles["aeroButton"]);
             }
 
         }
