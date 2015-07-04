@@ -474,12 +474,21 @@ namespace PartCommander
 
             GUILayout.EndScrollView();
             GUILayout.Space(5f);
-            if (w.currentPart == null && w.popOutWindow == false)
+            if (w.currentPart == null && w.popOutWindow == false && w.search)
             {
                 GUILayout.BeginHorizontal();
-                partFilter = GUILayout.TextField(partFilter);
+                string newPartFilter = GUILayout.TextField(partFilter);
+                if (newPartFilter != partFilter)
+                {
+                    partFilter = newPartFilter;
+                    updateParts = true;
+                }
                 GUILayout.EndHorizontal();
                 GUILayout.Space(5f);
+            }
+            else
+            {
+                partFilter = "";
             }
 
             GUILayout.BeginHorizontal();
@@ -898,12 +907,22 @@ namespace PartCommander
                 if (w.popOutWindow == false)
                 {
                     w.alphaSort = GUILayout.Toggle(w.alphaSort, new GUIContent("", "Alphabetical Sort"), modStyle.guiStyles["azButton"]);
+                    GUILayout.Space(5f);
+                    bool newSearch = GUILayout.Toggle(w.search, new GUIContent("", "Search"), modStyle.guiStyles["search"]);
+                    if (newSearch != w.search)
+                    {
+                        partFilter = "";
+                        updateParts = true;
+                        newSearch = w.search;
+                    }
                 }
             }
             else
             {
                 w.showResources = GUILayout.Toggle(w.showResources, new GUIContent("", "Resources Display"), modStyle.guiStyles["resourcesButton"]);
+                GUILayout.Space(5f);
                 w.showTemp = GUILayout.Toggle(w.showTemp, new GUIContent("", "Temperature Display"), modStyle.guiStyles["tempButton"]);
+                GUILayout.Space(5f);
                 w.showAero = GUILayout.Toggle(w.showAero, new GUIContent("", "Aerodynamics Display"), modStyle.guiStyles["aeroButton"]);
             }
 

@@ -43,6 +43,7 @@ namespace PartCommander
             guiStyles["resizeButton"] = GetToggleButtonStyle("resize", 20, 20, true);
             guiStyles["symLockButton"] = GetToggleButtonStyle("symlock", 20, 20, false);
             guiStyles["azButton"] = GetToggleButtonStyle("az", 20, 20, false);
+            guiStyles["search"] = GetToggleButtonStyle("search", 20, 20, false);
             guiStyles["closeButton"] = GetToggleButtonStyle("close", 15, 15, true);
             guiStyles["popoutButton"] = GetToggleButtonStyle("popout", 20, 20, true);
             guiStyles["resourcesButton"] = GetToggleButtonStyle("resources", 20, 20, false);

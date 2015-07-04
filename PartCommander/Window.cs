@@ -19,6 +19,7 @@ namespace PartCommander
         internal uint currentPartId;
         internal bool symLock = true;
         internal bool alphaSort = false;
+        internal bool search = false;
         internal bool showPartSelector = true;
         internal bool showResources = true;
         internal bool showTemp = false;
