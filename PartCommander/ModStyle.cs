@@ -14,7 +14,7 @@ namespace PartCommander
         public GUISkin skin;
         public Dictionary<string, GUIStyle> guiStyles;
         public int fontSize = 12;
-        public int minWidth = 100;
+        public int minWidth = 110;
         public int minHeight = 100;
 
         public ModStyle()

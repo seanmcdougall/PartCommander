@@ -26,6 +26,7 @@ namespace PartCommander
         internal bool showAero = false;
         internal int windowId;
         internal bool togglePartSelector = false;
+        internal Vector2 oldScrollPos = new Vector2(0f, 0f);
         internal Vector2 scrollPos = new Vector2(0f, 0f);
         internal Part selectPart = null;
         internal Dictionary<int, PCWindow> partWindows;

@@ -163,6 +163,9 @@ namespace PartCommander
                         // Showing part selector now... clear out any selected part info.
                         currentWindow.currentPart = null;
                         currentWindow.currentPartId = 0u;
+
+                        // Restore old scroll position
+                        currentWindow.scrollPos = currentWindow.oldScrollPos;
                     }
                     else
                     {
@@ -217,6 +220,9 @@ namespace PartCommander
                         currentWindow.currentPartId = currentWindow.selectPart.flightID;
                         currentWindow.showPartSelector = false;
                         partFilter = "";
+                        // Save old scroll position
+                        currentWindow.oldScrollPos = currentWindow.scrollPos;
+                        currentWindow.scrollPos.x = currentWindow.scrollPos.y = 0;
                     }
                     currentWindow.selectPart = null;
                 }
@@ -889,7 +895,7 @@ namespace PartCommander
         private void showSettings(PCWindow w)
         {
             bool oldSymLock = w.symLock;
-            w.symLock = GUILayout.Toggle(w.symLock, new GUIContent("", "Symmetry"), modStyle.guiStyles["symLockButton"]);
+            w.symLock = GUILayout.Toggle(w.symLock, new GUIContent("", "Symmetry Lock"), modStyle.guiStyles["symLockButton"]);
             if (w.symLock != oldSymLock)
             {
                 if (w.currentPart != null)
@@ -913,7 +919,7 @@ namespace PartCommander
                     {
                         partFilter = "";
                         updateParts = true;
-                        newSearch = w.search;
+                        w.search = newSearch;
                     }
                 }
             }
