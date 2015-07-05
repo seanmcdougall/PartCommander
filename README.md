@@ -9,37 +9,19 @@ KSP Forum: http://forum.kerbalspaceprogram.com/threads/127575
 
 KerbalStuff: http://www.kerbalstuff.com/mod/965/Part%20Commander
 
-Curse: coming soon
+Curse: http://www.curse.com/ksp-mods/kerbal/232303-part-commander
 
-1.0.0.0 - 2015/07/02
+1.0.1 - 2015/07/04
+- added .version file
+- fixed a bug that prevented the parts list from updating properly when using the filtering/sorting options
+- made the search field a toggleable option
+- added a toggleable category filter
+- added tooltips
+- made the scrollbar position persistent when moving back and forth between the main listing and a part
+
+1.0.0 - 2015/07/02
 - more bug fixes
 - first official release
-
-0.9.3.0 - 2015/06/28
-- bug fixes
-- more gui changes
-- toggles for resources, temp and aero info
-- now uses new edge highlighting system
-
-0.9.2.1 - 2015/06/23
-- fixed bug affecting jet engines
-
-0.9.2.0 - 2015/06/23
-- updated to support KSP 1.0.3/1.0.4
-- added filtering/sorting options
-- added ability to "pop off" parts into their own windows
-
-0.9.1.1 - 2015/06/08
-- fixes a bug where the window would get corrupted if the selected part was destroyed
-
-0.9.1.0 - 2015/06/07
-- code overhaul
-- added persistent storage via ScenarioModule
-- window position/size and selected part will now be maintained
-- added temperature display (more available when F12 debug option is enabled)
-
-0.9.0.0 (Initial WIP release) 
-
 
 ACKNOWLEDGEMENTS
 - Icons made by Freepik (http://www.flaticon.com/authors/freepik) from www.flaticon.com are licensed by CC BY 3.0 (http://creativecommons.org/licenses/by/3.0/)

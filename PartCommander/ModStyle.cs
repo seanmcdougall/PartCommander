@@ -44,24 +44,36 @@ namespace PartCommander
             guiStyles["symLockButton"] = GetToggleButtonStyle("symlock", 20, 20, false);
             guiStyles["azButton"] = GetToggleButtonStyle("az", 20, 20, false);
             guiStyles["search"] = GetToggleButtonStyle("search", 20, 20, false);
+            guiStyles["filter"] = GetToggleButtonStyle("filter", 20, 20, false);
             guiStyles["closeButton"] = GetToggleButtonStyle("close", 15, 15, true);
             guiStyles["popoutButton"] = GetToggleButtonStyle("popout", 20, 20, true);
             guiStyles["resourcesButton"] = GetToggleButtonStyle("resources", 20, 20, false);
             guiStyles["tempButton"] = GetToggleButtonStyle("temp", 20, 20, false);
             guiStyles["aeroButton"] = GetToggleButtonStyle("aero", 20, 20, false);
+            guiStyles["left"] = GetToggleButtonStyle("left", 20, 20, true);
+            guiStyles["right"] = GetToggleButtonStyle("right", 20, 20, true);
 
-            guiStyles["centeredLabel"] = new GUIStyle();
-            guiStyles["centeredLabel"].name = "centeredLabel";
-            guiStyles["centeredLabel"].fontSize = fontSize + 3;
-            guiStyles["centeredLabel"].fontStyle = FontStyle.Bold;
-            guiStyles["centeredLabel"].alignment = TextAnchor.MiddleCenter;
-            guiStyles["centeredLabel"].wordWrap = true;
-            guiStyles["centeredLabel"].normal.textColor = Color.yellow;
-            guiStyles["centeredLabel"].padding = new RectOffset() { left = 20, right = 20, top = 0, bottom = 0 };
+            guiStyles["titleLabel"] = new GUIStyle();
+            guiStyles["titleLabel"].name = "titleLabel";
+            guiStyles["titleLabel"].fontSize = fontSize + 3;
+            guiStyles["titleLabel"].fontStyle = FontStyle.Bold;
+            guiStyles["titleLabel"].alignment = TextAnchor.MiddleCenter;
+            guiStyles["titleLabel"].wordWrap = true;
+            guiStyles["titleLabel"].normal.textColor = Color.yellow;
+            guiStyles["titleLabel"].padding = new RectOffset() { left = 20, right = 20, top = 0, bottom = 0 };
+
+            guiStyles["categoryLabel"] = new GUIStyle();
+            guiStyles["categoryLabel"].name = "categoryLabel";
+            guiStyles["categoryLabel"].fontSize = fontSize + 1;
+            guiStyles["categoryLabel"].fontStyle = FontStyle.Bold;
+            guiStyles["categoryLabel"].alignment = TextAnchor.MiddleCenter;
+            guiStyles["categoryLabel"].wordWrap = true;
+            guiStyles["categoryLabel"].normal.textColor = XKCDColors.Orange;
 
             guiStyles["tooltip"] = new GUIStyle();
             guiStyles["tooltip"].name = "tooltip";
             guiStyles["tooltip"].fontSize = fontSize+3;
+            guiStyles["tooltip"].wordWrap = true;
             guiStyles["tooltip"].normal.textColor = Color.yellow;
 
         }

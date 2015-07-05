@@ -33,6 +33,12 @@ namespace PartCommander
 
         private List<Part> activeParts = new List<Part>();
         private string partFilter = "";
+        private PartCategories partFilterCategory = PartCategories.none;
+        private bool movePrevCategory = false;
+        private bool moveNextCategory = false;
+
+        private List<PartCategories> partCats;
+
         private bool updateParts = true;
 
         private PCWindow currentWindow;
@@ -79,6 +85,14 @@ namespace PartCommander
             // Add hooks for updating part list when needed
             GameEvents.onVesselWasModified.Add(triggerUpdateParts);
             GameEvents.onVesselChange.Add(triggerUpdateParts);
+
+            // Load part categories
+            partCats = Enum.GetValues(typeof(PartCategories)).Cast<PartCategories>().ToList();
+            partCats.Remove(PartCategories.none);
+            partCats.Remove(PartCategories.Propulsion);
+            partCats.Sort();
+            partCats = partCats.OrderBy(o => o.ToString()).ToList();
+            partCats.Insert(0, PartCategories.none);
         }
 
         public void triggerUpdateParts(Vessel v)
@@ -196,6 +210,43 @@ namespace PartCommander
                     }
                 }
 
+                // Update the part category filter
+                if (movePrevCategory)
+                {
+                    int i = partCats.FindIndex(a => a.Equals(partFilterCategory));
+                    i--;
+                    if (i < 0)
+                    {
+                        partFilterCategory = partCats.Last();
+                    }
+                    else
+                    {
+                        partFilterCategory = partCats[i];
+                    }
+
+                    updateParts = true;
+                    movePrevCategory = false;
+                    currentWindow.scrollPos.x = currentWindow.scrollPos.y = 0;
+                }
+
+                if (moveNextCategory)
+                {
+                    int i = partCats.FindIndex(a => a.Equals(partFilterCategory));
+                    i++;
+                    if (i >= partCats.Count)
+                    {
+                        partFilterCategory = partCats.First();
+                    }
+                    else
+                    {
+                        partFilterCategory = partCats[i];
+                    }
+
+                    updateParts = true;
+                    moveNextCategory = false;
+                    currentWindow.scrollPos.x = currentWindow.scrollPos.y = 0;
+                }
+
                 resizeWindows();
                 windowHover();
                 if (updateParts)
@@ -206,7 +257,7 @@ namespace PartCommander
 
 
                 // If there's only one available part on the vessel, select it automatically.
-                if (currentWindow.showPartSelector && activeParts.Count == 1 && partFilter == "")
+                if (currentWindow.showPartSelector && activeParts.Count == 1 && partFilter == "" && partFilterCategory == PartCategories.none)
                 {
                     currentWindow.selectPart = activeParts.First();
                 }
@@ -439,11 +490,11 @@ namespace PartCommander
             if (w.popOutWindow)
             {
                 string partTitle = (w.symLock && w.currentPart.symmetryCounterparts.Count() > 0) ? w.currentPart.partInfo.title + " (x" + (w.currentPart.symmetryCounterparts.Count() + 1) + ")" : w.currentPart.partInfo.title;
-                GUILayout.Label(partTitle, modStyle.guiStyles["centeredLabel"]);
+                GUILayout.Label(partTitle, modStyle.guiStyles["titleLabel"]);
             }
             else
             {
-                GUILayout.Label(FlightGlobals.ActiveVessel.vesselName, modStyle.guiStyles["centeredLabel"]);
+                GUILayout.Label(FlightGlobals.ActiveVessel.vesselName, modStyle.guiStyles["titleLabel"]);
             }
             GUILayout.EndVertical();
             if (Event.current.type == EventType.Repaint)
@@ -480,21 +531,53 @@ namespace PartCommander
 
             GUILayout.EndScrollView();
             GUILayout.Space(5f);
-            if (w.currentPart == null && w.popOutWindow == false && w.search)
+            if (w.currentPart == null && w.popOutWindow == false)
             {
-                GUILayout.BeginHorizontal();
-                string newPartFilter = GUILayout.TextField(partFilter);
-                if (newPartFilter != partFilter)
+                if (w.showSearch)
                 {
-                    partFilter = newPartFilter;
-                    updateParts = true;
+                    string newPartFilter = GUILayout.TextField(partFilter);
+                    if (newPartFilter != partFilter)
+                    {
+                        partFilter = newPartFilter;
+                        updateParts = true;
+                    }
+                    GUILayout.Space(5f);
                 }
-                GUILayout.EndHorizontal();
-                GUILayout.Space(5f);
-            }
-            else
-            {
-                partFilter = "";
+                else
+                {
+                    partFilter = "";
+                }
+                if (w.showFilter)
+                {
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Space(2f);
+                    if (GUILayout.Button("", modStyle.guiStyles["left"]))
+                    {
+                        movePrevCategory = true;
+                    }
+                    GUILayout.Space(3f);
+                    if (partFilterCategory == PartCategories.none)
+                    {
+                        GUILayout.Label("All Categories",modStyle.guiStyles["categoryLabel"],GUILayout.ExpandWidth(true));
+                    }
+                    else
+                    {
+                        GUILayout.Label(partFilterCategory.ToString(),modStyle.guiStyles["categoryLabel"],GUILayout.ExpandWidth(true));
+                    }
+                    GUILayout.Space(3f);
+                    if (GUILayout.Button("", modStyle.guiStyles["right"]))
+                    {
+                        moveNextCategory = true;
+                    }
+                    GUILayout.Space(2f);
+                    GUILayout.EndHorizontal();
+                    GUILayout.Space(5f);
+
+                }
+                else
+                {
+                    partFilterCategory = PartCategories.none;
+                }
             }
 
             GUILayout.BeginHorizontal();
@@ -524,7 +607,7 @@ namespace PartCommander
             }
 
             // Create resize button in bottom right corner
-            if (GUI.RepeatButton(new Rect(w.windowRect.width - 23, w.windowRect.height - 23, 20, 20), new GUIContent("", "Click and drag to resize"), modStyle.guiStyles["resizeButton"]))
+            if (GUI.RepeatButton(new Rect(w.windowRect.width - 23, w.windowRect.height - 23, 20, 20), "", modStyle.guiStyles["resizeButton"]))
             {
                 w.resizingWindow = true;
             }
@@ -543,7 +626,7 @@ namespace PartCommander
                     {
                         showTooltip = GUI.tooltip;
                     }
-                    
+
                 }
                 else
                 {
@@ -554,7 +637,6 @@ namespace PartCommander
 
 
             // Make window draggable by title
-            //GUI.DragWindow(new Rect(0, 0, 10000, 100));
             GUI.DragWindow(w.dragRect);
         }
 
@@ -566,50 +648,55 @@ namespace PartCommander
             List<Part> hiddenParts = new List<Part>();
             foreach (Part p in FlightGlobals.ActiveVessel.Parts)
             {
-                bool includePart = false;
-                if (!hiddenParts.Contains(p))
+                if (partFilterCategory == PartCategories.none || p.partInfo.category == partFilterCategory)
                 {
-                    // Hide other members of the symmetry
-                    if (currentWindow.symLock)
+                    bool includePart = false;
+                    if (!hiddenParts.Contains(p))
                     {
-                        foreach (Part symPart in p.symmetryCounterparts)
+                        // Hide other members of the symmetry
+                        if (currentWindow.symLock)
                         {
-                            hiddenParts.Add(symPart);
-                        }
-                    }
-                    foreach (PartModule pm in p.Modules)
-                    {
-                        if (includePart)
-                        {
-                            // Part was already included, so break out
-                            break;
-                        }
-                        else
-                        {
-                            if (pm.Fields != null || pm.Events != null)
+                            foreach (Part symPart in p.symmetryCounterparts)
                             {
-                                foreach (BaseField f in pm.Fields)
+                                hiddenParts.Add(symPart);
+                            }
+                        }
+
+
+                        foreach (PartModule pm in p.Modules)
+                        {
+                            if (includePart)
+                            {
+                                // Part was already included, so break out
+                                break;
+                            }
+                            else
+                            {
+                                if (pm.Fields != null || pm.Events != null)
                                 {
-                                    if (f.guiActive && f.guiName != "")
+                                    foreach (BaseField f in pm.Fields)
                                     {
-                                        includePart = true;
-                                        break;
-                                    }
-                                }
-                                if (!includePart)
-                                {
-                                    foreach (BaseEvent e in pm.Events)
-                                    {
-                                        if (e.guiActive && e.active)
+                                        if (f.guiActive && f.guiName != "")
                                         {
                                             includePart = true;
                                             break;
                                         }
                                     }
-                                }
-                                if (includePart)
-                                {
-                                    activeParts.Add(p);
+                                    if (!includePart)
+                                    {
+                                        foreach (BaseEvent e in pm.Events)
+                                        {
+                                            if (e.guiActive && e.active)
+                                            {
+                                                includePart = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (includePart)
+                                    {
+                                        activeParts.Add(p);
+                                    }
                                 }
                             }
                         }
@@ -898,6 +985,7 @@ namespace PartCommander
             w.symLock = GUILayout.Toggle(w.symLock, new GUIContent("", "Symmetry Lock"), modStyle.guiStyles["symLockButton"]);
             if (w.symLock != oldSymLock)
             {
+                updateParts = true;
                 if (w.currentPart != null)
                 {
                     // reset part highlighting
@@ -912,14 +1000,27 @@ namespace PartCommander
             {
                 if (w.popOutWindow == false)
                 {
-                    w.alphaSort = GUILayout.Toggle(w.alphaSort, new GUIContent("", "Alphabetical Sort"), modStyle.guiStyles["azButton"]);
+                    bool newAlphaSort = GUILayout.Toggle(w.alphaSort, new GUIContent("", "Alphabetical Sort"), modStyle.guiStyles["azButton"]);
+                    if (newAlphaSort != w.alphaSort)
+                    {
+                        updateParts = true;
+                        w.alphaSort = newAlphaSort;
+                    }
                     GUILayout.Space(5f);
-                    bool newSearch = GUILayout.Toggle(w.search, new GUIContent("", "Search"), modStyle.guiStyles["search"]);
-                    if (newSearch != w.search)
+                    bool newSearch = GUILayout.Toggle(w.showSearch, new GUIContent("", "Search"), modStyle.guiStyles["search"]);
+                    if (newSearch != w.showSearch)
                     {
                         partFilter = "";
                         updateParts = true;
-                        w.search = newSearch;
+                        w.showSearch = newSearch;
+                    }
+                    GUILayout.Space(5f);
+                    bool newFilter = GUILayout.Toggle(w.showFilter, new GUIContent("", "Category Filter"), modStyle.guiStyles["filter"]);
+                    if (newFilter != w.showFilter)
+                    {
+                        partFilterCategory = PartCategories.none;
+                        updateParts = true;
+                        w.showFilter = newFilter;
                     }
                 }
             }
