@@ -52,6 +52,7 @@ namespace PartCommander
             guiStyles["aeroButton"] = GetToggleButtonStyle("aero", 20, 20, false);
             guiStyles["left"] = GetToggleButtonStyle("left", 20, 20, true);
             guiStyles["right"] = GetToggleButtonStyle("right", 20, 20, true);
+            guiStyles["settings"] = GetToggleButtonStyle("settings", 20, 20, false);
 
             guiStyles["titleLabel"] = new GUIStyle();
             guiStyles["titleLabel"].name = "titleLabel";

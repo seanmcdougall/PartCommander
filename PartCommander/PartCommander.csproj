@@ -58,6 +58,7 @@
     <Compile Include="ModStyle.cs" />
     <Compile Include="PartCommander.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="SettingsWindow.cs" />
     <Compile Include="ToolbarWrapper.cs" />
     <Compile Include="Window.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -131,6 +132,12 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="textures\search_on.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\settings_off.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\settings_on.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="textures\symlock_off.png">

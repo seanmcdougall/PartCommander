@@ -43,6 +43,7 @@ namespace PartCommander
         private bool updateParts = true;
 
         private PCWindow currentWindow;
+        private SettingsWindow settingsWindow;
 
         private bool visibleUI = true;
 
@@ -79,7 +80,7 @@ namespace PartCommander
             }
 
             GameEvents.onGameSceneLoadRequested.Add(onSceneChange);
-            
+
         }
 
         public void Start()
@@ -101,6 +102,9 @@ namespace PartCommander
             partCats.Sort();
             partCats = partCats.OrderBy(o => o.ToString()).ToList();
             partCats.Insert(0, PartCategories.none);
+
+            // Create settings window
+            settingsWindow = new SettingsWindow(modStyle);
         }
 
         private void addLauncherButtons()
@@ -345,6 +349,8 @@ namespace PartCommander
                     GUI.Label(new Rect(Input.mousePosition.x + 10, Screen.height - Input.mousePosition.y + 20, showTooltip.Length * 10, 20), showTooltip, modStyle.guiStyles["tooltip"]);
                     GUI.depth = 0;
                 }
+
+                settingsWindow.draw();
 
             }
         }
@@ -1098,6 +1104,8 @@ namespace PartCommander
                         updateParts = true;
                         w.showFilter = newFilter;
                     }
+                    GUILayout.Space(5f);
+                    settingsWindow.showWindow = GUILayout.Toggle(settingsWindow.showWindow, new GUIContent("", "Settings"), modStyle.guiStyles["settings"]);
                 }
             }
             else
