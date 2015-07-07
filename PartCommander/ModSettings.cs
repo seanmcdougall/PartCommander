@@ -25,10 +25,10 @@ namespace PartCommander
             if (node.HasNode("PartCommanderGameSettings"))
             {
                 SettingsNode = node.GetNode("PartCommanderGameSettings");
-                windowDefaultX = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultX", windowDefaultX),0,Screen.width-50);
-                windowDefaultY = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultY", windowDefaultY),0,Screen.height-50);
-                windowDefaultWidth = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultWidth", windowDefaultWidth),50,Screen.width);
-                windowDefaultHeight = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultHeight", windowDefaultHeight),50,Screen.height);
+                windowDefaultX = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultX", windowDefaultX), 0, Screen.width - 50);
+                windowDefaultY = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultY", windowDefaultY), 0, Screen.height - 50);
+                windowDefaultWidth = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultWidth", windowDefaultWidth), 50, Screen.width);
+                windowDefaultHeight = Mathf.Clamp(SettingsNode.GetValueOrDefault("windowDefaultHeight", windowDefaultHeight), 50, Screen.height);
                 windowDefaultRect = new Rect(windowDefaultX, windowDefaultY, windowDefaultWidth, windowDefaultHeight);
                 visibleWindow = SettingsNode.GetValueOrDefault("visibleWindow", visibleWindow);
 
@@ -77,7 +77,22 @@ namespace PartCommander
                 {
                     if (visibleWindow)
                     {
-                        PartCommander.Instance.launcherButton.SetTrue(true);
+                        PartCommander.Instance.launcherButton.SetTrue();
+                    }
+                    else
+                    {
+                        PartCommander.Instance.launcherButton.SetFalse();
+                    }
+                }
+                else
+                {
+                    if (visibleWindow)
+                    {
+                        PartCommander.Instance.showWindow();
+                    }
+                    else
+                    {
+                        PartCommander.Instance.hideWindow();
                     }
                 }
             }

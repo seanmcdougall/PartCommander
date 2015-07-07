@@ -53,9 +53,12 @@
   <ItemGroup>
     <Compile Include="AddScenarioModule.cs" />
     <Compile Include="ConfigNodeExtensions.cs" />
+    <Compile Include="ConfigNodeStorage.cs" />
     <Compile Include="ModSettings.cs" />
     <Compile Include="ModStyle.cs" />
     <Compile Include="PartCommander.cs" />
+    <Compile Include="Settings.cs" />
+    <Compile Include="ToolbarWrapper.cs" />
     <Compile Include="Window.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Scenario.cs" />
@@ -77,6 +80,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="textures\az_on.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="textures\blizzyToolbar.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="textures\close_off.png">

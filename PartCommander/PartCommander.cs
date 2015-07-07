@@ -30,6 +30,7 @@ namespace PartCommander
     public class PartCommander : MonoBehaviour
     {
         internal ApplicationLauncherButton launcherButton = null;
+        internal IButton blizzyButton = null;
 
         private List<Part> activeParts = new List<Part>();
         private string partFilter = "";
@@ -54,6 +55,8 @@ namespace PartCommander
 
         private string showTooltip = "";
 
+        Settings settings = new Settings("PartCommander.cfg");
+
         public static PartCommander Instance { get; private set; }
         public PartCommander()
         {
@@ -61,13 +64,22 @@ namespace PartCommander
         }
 
         // ------------------------------- Main Events --------------------------------
-        public void Awake()
+        internal void Awake()
         {
+
+            settings.Load();
+            settings.Save();
+
             modStyle = new ModStyle();
 
             // Hook into events for Application Launcher
-            GameEvents.onGUIApplicationLauncherReady.Add(OnGUIApplicationLauncherReady);
+            if (settings.useStockToolbar)
+            {
+                GameEvents.onGUIApplicationLauncherReady.Add(OnGUIApplicationLauncherReady);
+            }
+
             GameEvents.onGameSceneLoadRequested.Add(onSceneChange);
+            
         }
 
         public void Start()
@@ -76,11 +88,7 @@ namespace PartCommander
             GameEvents.onShowUI.Add(showUI);
             GameEvents.onHideUI.Add(hideUI);
 
-            // Load Application Launcher
-            if (launcherButton == null)
-            {
-                OnGUIApplicationLauncherReady();
-            }
+            addLauncherButtons();
 
             // Add hooks for updating part list when needed
             GameEvents.onVesselWasModified.Add(triggerUpdateParts);
@@ -95,6 +103,33 @@ namespace PartCommander
             partCats.Insert(0, PartCategories.none);
         }
 
+        private void addLauncherButtons()
+        {
+            // Load Blizzy toolbar
+            if (blizzyButton == null)
+            {
+                if (ToolbarManager.ToolbarAvailable)
+                {
+                    // Create button
+                    blizzyButton = ToolbarManager.Instance.add("PartCommander", "blizzyButton");
+                    blizzyButton.TexturePath = "PartCommander/textures/blizzyToolbar";
+                    blizzyButton.ToolTip = "Part Commander";
+                    blizzyButton.OnClick += (e) => toggleWindow();
+                }
+                else
+                {
+                    // Blizzy Toolbar not available, fall back to stock launcher
+                    settings.useStockToolbar = true;
+                }
+            }
+
+            // Load Application Launcher
+            if (launcherButton == null && settings.useStockToolbar)
+            {
+                OnGUIApplicationLauncherReady();
+            }
+        }
+
         public void triggerUpdateParts(Vessel v)
         {
             updateParts = true;
@@ -102,6 +137,15 @@ namespace PartCommander
 
         public void Update()
         {
+            // Detect hotkey
+            if (settings.enableHotKey && Input.GetKeyDown(settings.hotKey))
+            {
+                if (GameSettings.MODIFIER_KEY.GetKey())
+                {
+                    toggleWindow();
+                }
+            }
+
             // Only proceed if a vessel is active, physics have stablized, and window is visible
             if (FlightGlobals.ActiveVessel != null && FlightGlobals.ActiveVessel.HoldPhysics == false && PCScenario.Instance != null && visibleUI && PCScenario.Instance.gameSettings.visibleWindow)
             {
@@ -308,38 +352,44 @@ namespace PartCommander
         // Remove the launcher button when the scene changes
         public void onSceneChange(GameScenes scene)
         {
-            removeLauncherButton();
+            removeLauncherButtons();
         }
 
         // Cleanup when the module is destroyed
         protected void OnDestroy()
         {
             PCScenario.Instance.gameSettings.visibleWindow = false;
-            GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
-            GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
-            removeLauncherButton();
+
+            removeLauncherButtons();
 
             if (InputLockManager.lockStack.ContainsKey(controlsLockID))
             {
                 InputLockManager.RemoveControlLock(controlsLockID);
             }
 
+            GameEvents.onGameSceneLoadRequested.Remove(onSceneChange);
+
         }
 
         // ------------------------------------------ Application Launcher / UI ---------------------------------------
         private void OnGUIApplicationLauncherReady()
         {
-            if (launcherButton == null)
+            if (launcherButton == null && settings.useStockToolbar)
             {
                 launcherButton = ApplicationLauncher.Instance.AddModApplication(showWindow, hideWindow, null, null, null, null, ApplicationLauncher.AppScenes.FLIGHT | ApplicationLauncher.AppScenes.MAPVIEW, modStyle.GetImage("PartCommander/textures/toolbar", 38, 38));
             }
         }
 
-        public void removeLauncherButton()
+        public void removeLauncherButtons()
         {
             if (launcherButton != null)
             {
+                GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
                 ApplicationLauncher.Instance.RemoveModApplication(launcherButton);
+            }
+            if (blizzyButton != null)
+            {
+                blizzyButton.Destroy();
             }
         }
 
@@ -361,6 +411,32 @@ namespace PartCommander
         public void hideWindow() // triggered by toolbar
         {
             PCScenario.Instance.gameSettings.visibleWindow = false;
+        }
+
+        public void toggleWindow()
+        {
+            if (launcherButton != null)
+            {
+                if (PCScenario.Instance.gameSettings.visibleWindow) 
+                {
+                    launcherButton.SetFalse();
+                }
+                else
+                {
+                    launcherButton.SetTrue();
+                }
+            }
+            else
+            {
+                if (PCScenario.Instance.gameSettings.visibleWindow)
+                {
+                    hideWindow();
+                }
+                else
+                {
+                    showWindow();
+                }
+            }
         }
 
         private void resizeWindows()

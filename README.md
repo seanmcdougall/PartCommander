@@ -3,13 +3,26 @@ Plugin for Kerbal Space Program (KSP).  Access the right-click action menus from
 
 Copyright 2015, Sean McDougall
 
+DOWNLOAD LINKS
+
 GitHub: https://github.com/seanmcdougall/PartCommander
 
 KSP Forum: http://forum.kerbalspaceprogram.com/threads/127575
 
 KerbalStuff: http://www.kerbalstuff.com/mod/965/Part%20Commander
 
+CKAN: http://forum.kerbalspaceprogram.com/threads/100067
+
 Curse: http://www.curse.com/ksp-mods/kerbal/232303-part-commander
+
+CHANGELOG
+
+1.0.2
+- added persistent PartCommander.cfg settings file which gets created under GameData/PartCommander
+- added optional support for blizzy78's Toolbar (http://forum.kerbalspaceprogram.com/threads/60863)
+- stock toolbar button can be disabled by setting "useStockToolbar = False" in PartCommander.cfg
+- added hot key support for showing/hiding windows instead of using toolbar buttons.  Default key combo is Mod + P.  This can also be changed in PartCommander.cfg by setting "hotKey" to something else.
+- to disable the hot key altogether, set "enableHotKey = False" in PartCommander.cfg
 
 1.0.1 - 2015/07/04
 - added .version file
@@ -25,3 +38,4 @@ Curse: http://www.curse.com/ksp-mods/kerbal/232303-part-commander
 
 ACKNOWLEDGEMENTS
 - Icons made by Freepik (http://www.flaticon.com/authors/freepik) from www.flaticon.com are licensed by CC BY 3.0 (http://creativecommons.org/licenses/by/3.0/)
+- TriggerAU for his KSPPluginFramework (https://github.com/TriggerAu/KSPPluginFramework)
