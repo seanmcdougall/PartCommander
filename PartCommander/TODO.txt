@@ -1,3 +1,0 @@
-- create persistent settings window
-- add optional Blizzy toolbar support
-- add hotkey combo for showing/hiding

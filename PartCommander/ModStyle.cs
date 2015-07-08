@@ -40,6 +40,10 @@ namespace PartCommander
             skin.window.fontSize = (fontSize + 2);
             skin.window.padding = new RectOffset() { left = 1, top = 5, right = 1, bottom = 1 };
 
+            Texture2D blackBackground = new Texture2D(1, 1);
+            blackBackground.SetPixel(0, 0, Color.black);
+            blackBackground.Apply();
+
             guiStyles["resizeButton"] = GetToggleButtonStyle("resize", 20, 20, true);
             guiStyles["symLockButton"] = GetToggleButtonStyle("symlock", 20, 20, false);
             guiStyles["azButton"] = GetToggleButtonStyle("az", 20, 20, false);
@@ -75,7 +79,9 @@ namespace PartCommander
             guiStyles["tooltip"].name = "tooltip";
             guiStyles["tooltip"].fontSize = fontSize+3;
             guiStyles["tooltip"].wordWrap = true;
+            guiStyles["tooltip"].alignment = TextAnchor.MiddleCenter;
             guiStyles["tooltip"].normal.textColor = Color.yellow;
+            guiStyles["tooltip"].normal.background = blackBackground;
 
         }
 

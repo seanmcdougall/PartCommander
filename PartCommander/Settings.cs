@@ -18,7 +18,10 @@ namespace PartCommander
         internal bool enableHotKey = true;
 
         [Persistent]
-        internal string hotKey = "p";
+        internal KeyCode hotKey = KeyCode.P;
+
+        [Persistent]
+        internal bool hideUnAct = false;
 
     }
 }

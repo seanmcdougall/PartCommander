@@ -19,10 +19,14 @@ CHANGELOG
 
 1.0.2
 - added persistent PartCommander.cfg settings file which gets created under GameData/PartCommander
+- created new Settings window to manage this file
 - added optional support for blizzy78's Toolbar (http://forum.kerbalspaceprogram.com/threads/60863)
-- stock toolbar button can be disabled by setting "useStockToolbar = False" in PartCommander.cfg
-- added hot key support for showing/hiding windows instead of using toolbar buttons.  Default key combo is Mod + P.  This can also be changed in PartCommander.cfg by setting "hotKey" to something else.
-- to disable the hot key altogether, set "enableHotKey = False" in PartCommander.cfg
+- stock toolbar button can be disabled through the new Settings window
+- added hot key support for showing/hiding windows instead of using toolbar buttons.  Default key combo is Mod + P.  
+  This can be changed through the Settings window (but be careful not to pick something that KSP already uses).
+- you can also disable the hot key altogether through Settings
+- made the tooltips more visible by setting a solid background colour
+- fixed some control locking issues when mousing over a window (most )
 
 1.0.1 - 2015/07/04
 - added .version file

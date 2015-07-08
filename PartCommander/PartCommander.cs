@@ -40,7 +40,7 @@ namespace PartCommander
 
         private List<PartCategories> partCats;
 
-        private bool updateParts = true;
+        internal bool updateParts = true;
 
         private PCWindow currentWindow;
         private SettingsWindow settingsWindow;
@@ -54,7 +54,7 @@ namespace PartCommander
 
         private ModStyle modStyle;
 
-        private string showTooltip = "";
+        internal string showTooltip = "";
 
         Settings settings = new Settings("PartCommander.cfg");
 
@@ -104,7 +104,8 @@ namespace PartCommander
             partCats.Insert(0, PartCategories.none);
 
             // Create settings window
-            settingsWindow = new SettingsWindow(modStyle);
+            settingsWindow = new SettingsWindow(modStyle,settings);
+            
         }
 
         private void addLauncherButtons()
@@ -141,6 +142,22 @@ namespace PartCommander
 
         public void Update()
         {
+            // Load Application Launcher
+            if (launcherButton == null && settings.useStockToolbar)
+            {
+                OnGUIApplicationLauncherReady();
+                if (PCScenario.Instance.gameSettings.visibleWindow)
+                {
+                    launcherButton.SetTrue();
+                }
+            }
+
+            // Destroy application launcher
+            if (launcherButton != null && settings.useStockToolbar == false)
+            {
+                removeApplicationLauncher();
+            }
+
             // Detect hotkey
             if (settings.enableHotKey && Input.GetKeyDown(settings.hotKey))
             {
@@ -222,6 +239,8 @@ namespace PartCommander
                     currentWindow.showPartSelector = !currentWindow.showPartSelector;
                     if (currentWindow.showPartSelector)
                     {
+                        setHighlighting(currentWindow.currentPart, currentWindow.symLock, false);
+
                         // Showing part selector now... clear out any selected part info.
                         currentWindow.currentPart = null;
                         currentWindow.currentPartId = 0u;
@@ -346,7 +365,10 @@ namespace PartCommander
                 }
                 if (showTooltip != "" && showTooltip != null)
                 {
-                    GUI.Label(new Rect(Input.mousePosition.x + 10, Screen.height - Input.mousePosition.y + 20, showTooltip.Length * 10, 20), showTooltip, modStyle.guiStyles["tooltip"]);
+                    float minWidth;
+                    float maxWidth;
+                    modStyle.guiStyles["tooltip"].CalcMinMaxWidth(new GUIContent(showTooltip), out minWidth, out maxWidth);
+                    GUI.Label(new Rect(Input.mousePosition.x + 10, Screen.height - Input.mousePosition.y + 20, maxWidth, 20), showTooltip, modStyle.guiStyles["tooltip"]);
                     GUI.depth = 0;
                 }
 
@@ -390,13 +412,18 @@ namespace PartCommander
         {
             if (launcherButton != null)
             {
-                GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
-                ApplicationLauncher.Instance.RemoveModApplication(launcherButton);
+                removeApplicationLauncher();
             }
             if (blizzyButton != null)
             {
                 blizzyButton.Destroy();
             }
+        }
+
+        private void removeApplicationLauncher()
+        {
+            GameEvents.onGUIApplicationLauncherReady.Remove(OnGUIApplicationLauncherReady);
+            ApplicationLauncher.Instance.RemoveModApplication(launcherButton);
         }
 
         public void showUI() // triggered on F2
@@ -455,6 +482,9 @@ namespace PartCommander
             {
                 resizeWindow(pow);
             }
+
+            settingsWindow.resizeWindow();
+
         }
 
         private void resizeWindow(PCWindow w)
@@ -504,6 +534,11 @@ namespace PartCommander
                         overSymLock = pow.symLock;
                     }
                 }
+
+                if (settingsWindow.windowRect.Contains(mousePos))
+                {
+                    overWindow = true;
+                }
             }
 
             if (controlsLocked)
@@ -531,7 +566,7 @@ namespace PartCommander
             {
                 if (visibleUI && PCScenario.Instance.gameSettings.visibleWindow && overWindow)
                 {
-                    InputLockManager.SetControlLock(ControlTypes.CAMERACONTROLS, controlsLockID);
+                    InputLockManager.SetControlLock(ControlTypes.All, controlsLockID);
                     controlsLocked = true;
 
                     if (overPart != null)
@@ -672,7 +707,7 @@ namespace PartCommander
             // Create part popout button in upper left corner
             if (w.currentPart != null && activeParts.Count > 0 && w.popOutWindow == false)
             {
-                if (GUI.Button(new Rect(7, 3, 20, 20), new GUIContent("", "Pop off in new window"), modStyle.guiStyles["popoutButton"]))
+                if (GUI.Button(new Rect(7f, 3f, 20f, 20f), new GUIContent("", "Pop off in new window"), modStyle.guiStyles["popoutButton"]))
                 {
                     w.togglePartSelector = true;
                     popOut = true;
@@ -687,9 +722,14 @@ namespace PartCommander
                     currentWindow.partWindows.Remove(w.windowId);
                 }
             }
+            else
+            {
+                // Create settings button in upper right corner
+                settingsWindow.showWindow = GUI.Toggle(new Rect(w.windowRect.width - 23, 3f, 20f, 20f), settingsWindow.showWindow, new GUIContent("", "Settings"), modStyle.guiStyles["settings"]);
+            }
 
             // Create resize button in bottom right corner
-            if (GUI.RepeatButton(new Rect(w.windowRect.width - 23, w.windowRect.height - 23, 20, 20), "", modStyle.guiStyles["resizeButton"]))
+            if (GUI.RepeatButton(new Rect(w.windowRect.width - 23f, w.windowRect.height - 23f, 20f, 20f), "", modStyle.guiStyles["resizeButton"]))
             {
                 w.resizingWindow = true;
             }
@@ -760,8 +800,19 @@ namespace PartCommander
                                     {
                                         if (f.guiActive && f.guiName != "")
                                         {
-                                            includePart = true;
-                                            break;
+                                            if (settings.hideUnAct)
+                                            {
+                                                if (f.uiControlFlight.GetType().ToString() == "UI_Toggle" || f.uiControlFlight.GetType().ToString() == "UI_FloatRange")
+                                                {
+                                                    includePart = true;
+                                                    break;
+                                                }
+                                            }
+                                            else
+                                            {
+                                                includePart = true;
+                                                break;
+                                            }
                                         }
                                     }
                                     if (!includePart)
@@ -1104,8 +1155,7 @@ namespace PartCommander
                         updateParts = true;
                         w.showFilter = newFilter;
                     }
-                    GUILayout.Space(5f);
-                    settingsWindow.showWindow = GUILayout.Toggle(settingsWindow.showWindow, new GUIContent("", "Settings"), modStyle.guiStyles["settings"]);
+                    
                 }
             }
             else
