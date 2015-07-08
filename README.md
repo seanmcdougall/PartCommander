@@ -17,7 +17,7 @@ Curse: http://www.curse.com/ksp-mods/kerbal/232303-part-commander
 
 CHANGELOG
 
-1.0.2
+1.0.2 - 2015/07/08
 - added persistent PartCommander.cfg settings file which gets created under GameData/PartCommander
 - created new Settings window to manage this file
 - added optional support for blizzy78's Toolbar (http://forum.kerbalspaceprogram.com/threads/60863)
@@ -25,8 +25,9 @@ CHANGELOG
 - added hot key support for showing/hiding windows instead of using toolbar buttons.  Default key combo is Mod + P.  
   This can be changed through the Settings window (but be careful not to pick something that KSP already uses).
 - you can also disable the hot key altogether through Settings
+- added a setting to hide "unactionable" parts... those that just have display fields but no buttons or sliders.
 - made the tooltips more visible by setting a solid background colour
-- fixed some control locking issues when mousing over a window (most )
+- fixed some control locking issues when mousing over a window
 
 1.0.1 - 2015/07/04
 - added .version file
