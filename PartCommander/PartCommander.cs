@@ -1173,54 +1173,61 @@ namespace PartCommander
 
         private void setHighlighting(Part p, bool symLock, bool highlight)
         {
-            if (GameSettings.EDGE_HIGHLIGHTING_PPFX)
+            try
             {
-                Transform model = p.FindModelTransform("model");
-                Highlighter h = model.gameObject.GetComponent<Highlighter>();
-                if (h != null)
+                if (GameSettings.EDGE_HIGHLIGHTING_PPFX)
                 {
-                    if (highlight)
+                    Transform model = p.FindModelTransform("model");
+                    Highlighter h = model.gameObject.GetComponent<Highlighter>();
+                    if (h != null)
                     {
-                        h.ConstantOn(XKCDColors.Orange);
-                    }
-                    else
-                    {
-                        h.ConstantOff();
-                    }
-
-                    if (symLock)
-                    {
-                        foreach (Part symPart in p.symmetryCounterparts)
+                        if (highlight)
                         {
-                            Transform symModel = symPart.FindModelTransform("model");
-                            Highlighter symH = symModel.gameObject.GetComponent<Highlighter>();
-                            if (symH != null)
+                            h.ConstantOn(XKCDColors.Orange);
+                        }
+                        else
+                        {
+                            h.ConstantOff();
+                        }
+
+                        if (symLock)
+                        {
+                            foreach (Part symPart in p.symmetryCounterparts)
                             {
-                                if (highlight)
+                                Transform symModel = symPart.FindModelTransform("model");
+                                Highlighter symH = symModel.gameObject.GetComponent<Highlighter>();
+                                if (symH != null)
                                 {
-                                    // Highlight the secondary symmetrical parts in a different colour
-                                    symH.ConstantOn(XKCDColors.Yellow);
-                                }
-                                else
-                                {
-                                    symH.ConstantOff();
+                                    if (highlight)
+                                    {
+                                        // Highlight the secondary symmetrical parts in a different colour
+                                        symH.ConstantOn(XKCDColors.Yellow);
+                                    }
+                                    else
+                                    {
+                                        symH.ConstantOff();
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            else
-            {
-                p.SetHighlight(highlight, false);
-                if (symLock)
+                else
                 {
-                    foreach (Part symPart in p.symmetryCounterparts)
+                    p.SetHighlight(highlight, false);
+                    if (symLock)
                     {
-                        symPart.SetHighlight(highlight, false);
+                        foreach (Part symPart in p.symmetryCounterparts)
+                        {
+                            symPart.SetHighlight(highlight, false);
+                        }
                     }
-                }
 
+                }
+            }
+            catch (Exception ex)
+            {
+                // catch any errors from trying to set highlighting on nonexistent parts.
             }
 
         }
