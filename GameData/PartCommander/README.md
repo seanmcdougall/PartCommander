@@ -17,6 +17,9 @@ Curse: http://www.curse.com/ksp-mods/kerbal/232303-part-commander
 
 CHANGELOG
 
+1.0.2.2 - 2015/07/09
+- another hotfix to correct an issue with settings not being saved properly to the persistent config file
+
 1.0.2.1 - 2015/07/08
 - hotfix to correct an issue where the part list wouldn't always update when parts were destroyed
 

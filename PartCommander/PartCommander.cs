@@ -1228,6 +1228,7 @@ namespace PartCommander
             catch (Exception ex)
             {
                 // catch any errors from trying to set highlighting on nonexistent parts.
+                // TODO: fix this properly
             }
 
         }

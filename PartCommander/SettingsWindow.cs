@@ -53,15 +53,26 @@ namespace PartCommander
             {
                 PartCommander.Instance.updateParts = true;
                 settings.hideUnAct = newHideUnAct;
+                settings.Save();
             }
 
             GUILayout.Space(5f);
 
-            settings.useStockToolbar = GUILayout.Toggle(settings.useStockToolbar, "Use stock toolbar");
+            bool newUseStockToolbar = GUILayout.Toggle(settings.useStockToolbar, "Use stock toolbar");
+            if (newUseStockToolbar != settings.useStockToolbar)
+            {
+                settings.useStockToolbar = newUseStockToolbar;
+                settings.Save();
+            }
 
             GUILayout.Space(5f);
 
-            settings.enableHotKey = GUILayout.Toggle(settings.enableHotKey, "Enable hot key");
+            bool newEnableHotKey = GUILayout.Toggle(settings.enableHotKey, "Enable hot key");
+            if (newEnableHotKey != settings.enableHotKey)
+            {
+                settings.enableHotKey = newEnableHotKey;
+                settings.Save();
+            }
 
             GUILayout.Space(5f);
             
@@ -72,6 +83,7 @@ namespace PartCommander
                 if (Event.current.isKey)
                 {
                     settings.hotKey = Event.current.keyCode;
+                    settings.Save();
                     settingHotKey = false;
                 }
             }
