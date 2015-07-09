@@ -1,0 +1,16 @@
+{
+	"NAME":"PartCommander",
+	"URL":"https://raw.githubusercontent.com/seanmcdougall/PartCommander/master/PartCommander.version",
+	"DOWNLOAD":"http://forum.kerbalspaceprogram.com/threads/127575",
+	"VERSION": {
+		"MAJOR":1,
+		"MINOR":0,
+		"PATCH":2,
+		"BUILD":2
+	},
+	"KSP_VERSION": {
+		"MAJOR":1,
+		"MINOR":0,
+		"PATCH":4
+	}
+}
