@@ -535,7 +535,7 @@ namespace PartCommander
                     }
                 }
 
-                if (settingsWindow.windowRect.Contains(mousePos))
+                if (settingsWindow.windowRect.Contains(mousePos) && settingsWindow.showWindow)
                 {
                     overWindow = true;
                 }
@@ -566,7 +566,7 @@ namespace PartCommander
             {
                 if (visibleUI && PCScenario.Instance.gameSettings.visibleWindow && overWindow)
                 {
-                    InputLockManager.SetControlLock(ControlTypes.All, controlsLockID);
+                    InputLockManager.SetControlLock(ControlTypes.CAMERACONTROLS, controlsLockID);
                     controlsLocked = true;
 
                     if (overPart != null)
