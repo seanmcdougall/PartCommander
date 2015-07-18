@@ -33,6 +33,7 @@ namespace PartCommander
         internal IButton blizzyButton = null;
 
         private List<Part> activeParts = new List<Part>();
+        private List<Part> highlightedParts = new List<Part>();
         private string partFilter = "";
         private PartCategories partFilterCategory = PartCategories.none;
         private bool movePrevCategory = false;
@@ -318,7 +319,7 @@ namespace PartCommander
                 windowHover();
                 if (updateParts)
                 {
-                    clearHighlighting(activeParts);
+                    clearHighlighting(highlightedParts);
                     getActiveParts();
                 }
 
@@ -554,7 +555,7 @@ namespace PartCommander
                 {
                     InputLockManager.RemoveControlLock(controlsLockID);
                     controlsLocked = false;
-                    clearHighlighting(activeParts);
+                    clearHighlighting(highlightedParts);
                     if (overPart != null)
                     {
                         GameEvents.onPartActionUIDismiss.Fire(overPart);
@@ -577,7 +578,7 @@ namespace PartCommander
                 }
                 else
                 {
-                    clearHighlighting(activeParts);
+                    clearHighlighting(highlightedParts);
                 }
             }
         }
@@ -1122,7 +1123,7 @@ namespace PartCommander
                 if (w.currentPart != null)
                 {
                     // reset part highlighting
-                    clearHighlighting(activeParts);
+                    clearHighlighting(highlightedParts);
                     setHighlighting(w.currentPart, w.symLock, true);
                 }
             }
@@ -1171,7 +1172,7 @@ namespace PartCommander
 
         // ----------------------------------- Part Highlighting -----------------------------------
 
-        private void setHighlighting(Part p, bool symLock, bool highlight)
+        private void setHighlighting(Part p, bool symLock, bool highlight, bool clear = true)
         {
             if (p == null)
             {
@@ -1180,35 +1181,77 @@ namespace PartCommander
 
             if (GameSettings.EDGE_HIGHLIGHTING_PPFX)
             {
-                Transform model = p.FindModelTransform("model");
-                Highlighter h = model.gameObject.GetComponent<Highlighter>();
-                if (h != null)
+                Transform model = null;
+                try
                 {
-                    if (highlight)
-                    {
-                        h.ConstantOn(XKCDColors.Orange);
-                    }
-                    else
-                    {
-                        h.ConstantOff();
-                    }
+                    model = p.FindModelTransform("model");
+                }
+                catch (Exception ex)
+                {
+                    Debug.Log("[PartCommander] caught exception " + ex.Message);
+                }
+                if (model != null)
+                {
 
-                    if (symLock)
+                    Highlighter h = model.gameObject.GetComponent<Highlighter>();
+                    if (h != null)
                     {
-                        foreach (Part symPart in p.symmetryCounterparts)
+                        if (highlight)
                         {
-                            Transform symModel = symPart.FindModelTransform("model");
-                            Highlighter symH = symModel.gameObject.GetComponent<Highlighter>();
-                            if (symH != null)
+                            h.ConstantOn(XKCDColors.Orange);
+                            if (!highlightedParts.Exists(x => x == p))
                             {
-                                if (highlight)
+                                highlightedParts.Add(p);
+                            }
+                        }
+                        else
+                        {
+                            h.ConstantOff();
+                            if (highlightedParts.Exists(x => x == p))
+                            {
+
+                                if (clear) highlightedParts.Remove(p);
+                            }
+                        }
+
+                        if (symLock)
+                        {
+                            foreach (Part symPart in p.symmetryCounterparts)
+                            {
+                                Transform symModel = null;
+                                try
                                 {
-                                    // Highlight the secondary symmetrical parts in a different colour
-                                    symH.ConstantOn(XKCDColors.Yellow);
+                                    symModel = symPart.FindModelTransform("model");
                                 }
-                                else
+                                catch (Exception ex)
                                 {
-                                    symH.ConstantOff();
+                                    Debug.Log("[PartCommander] caught exception " + ex.Message);
+                                }
+                                if (symModel != null)
+                                {
+                                    Highlighter symH = symModel.gameObject.GetComponent<Highlighter>();
+                                    if (symH != null)
+                                    {
+                                        if (highlight)
+                                        {
+                                            // Highlight the secondary symmetrical parts in a different colour
+                                            symH.ConstantOn(XKCDColors.Yellow);
+                                            if (!highlightedParts.Exists(x => x == symPart))
+                                            {
+
+                                                highlightedParts.Add(symPart);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            symH.ConstantOff();
+                                            if (highlightedParts.Exists(x => x == symPart))
+                                            {
+
+                                                if (clear) highlightedParts.Remove(symPart);
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1217,25 +1260,58 @@ namespace PartCommander
             }
             else
             {
-                p.SetHighlight(highlight, false);
-                if (symLock)
+                if (highlight)
                 {
-                    foreach (Part symPart in p.symmetryCounterparts)
+                    p.SetHighlight(true, false);
+                    if (!highlightedParts.Exists(x => x == p))
                     {
-                        symPart.SetHighlight(highlight, false);
+
+                        highlightedParts.Add(p);
+                    }
+                    if (symLock)
+                    {
+                        foreach (Part symPart in p.symmetryCounterparts)
+                        {
+                            symPart.SetHighlight(true, false);
+                            if (!highlightedParts.Exists(x => x == symPart))
+                            {
+
+                                highlightedParts.Add(symPart);
+                            }
+
+                        }
                     }
                 }
+                else
+                {
+                    p.SetHighlight(false, false);
+                    if (highlightedParts.Exists(x => x == p))
+                    {
 
+                        if (clear) highlightedParts.Remove(p);
+                    }
+                    if (symLock)
+                    {
+                        foreach (Part symPart in p.symmetryCounterparts)
+                        {
+                            symPart.SetHighlight(false, false);
+                            if (highlightedParts.Exists(x => x == symPart))
+                            {
+
+                                if (clear) highlightedParts.Remove(symPart);
+                            }
+
+                        }
+                    }
+                }
             }
-
-
         }
 
         private void clearHighlighting(List<Part> ap)
         {
             foreach (Part p in ap)
             {
-                setHighlighting(p, true, false);
+                setHighlighting(p, true, false, false);
             }
         }
 
