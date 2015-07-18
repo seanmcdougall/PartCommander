@@ -104,8 +104,8 @@ namespace PartCommander
             partCats.Insert(0, PartCategories.none);
 
             // Create settings window
-            settingsWindow = new SettingsWindow(modStyle,settings);
-            
+            settingsWindow = new SettingsWindow(modStyle, settings);
+
         }
 
         private void addLauncherButtons()
@@ -270,10 +270,10 @@ namespace PartCommander
                 {
                     if (currentWindow.currentPart.vessel != FlightGlobals.ActiveVessel)
                     {
+                        setHighlighting(currentWindow.currentPart, currentWindow.symLock, false);
                         currentWindow.currentPart = null;
                         currentWindow.currentPartId = 0u;
                         currentWindow.showPartSelector = true;
-                        setHighlighting(currentWindow.currentPart, currentWindow.symLock, false);
                     }
                 }
 
@@ -450,7 +450,7 @@ namespace PartCommander
         {
             if (launcherButton != null)
             {
-                if (PCScenario.Instance.gameSettings.visibleWindow) 
+                if (PCScenario.Instance.gameSettings.visibleWindow)
                 {
                     launcherButton.SetFalse();
                 }
@@ -675,11 +675,11 @@ namespace PartCommander
                     GUILayout.Space(3f);
                     if (partFilterCategory == PartCategories.none)
                     {
-                        GUILayout.Label("All Categories",modStyle.guiStyles["categoryLabel"],GUILayout.ExpandWidth(true));
+                        GUILayout.Label("All Categories", modStyle.guiStyles["categoryLabel"], GUILayout.ExpandWidth(true));
                     }
                     else
                     {
-                        GUILayout.Label(partFilterCategory.ToString(),modStyle.guiStyles["categoryLabel"],GUILayout.ExpandWidth(true));
+                        GUILayout.Label(partFilterCategory.ToString(), modStyle.guiStyles["categoryLabel"], GUILayout.ExpandWidth(true));
                     }
                     GUILayout.Space(3f);
                     if (GUILayout.Button("", modStyle.guiStyles["right"]))
@@ -1155,7 +1155,7 @@ namespace PartCommander
                         updateParts = true;
                         w.showFilter = newFilter;
                     }
-                    
+
                 }
             }
             else
@@ -1173,63 +1173,61 @@ namespace PartCommander
 
         private void setHighlighting(Part p, bool symLock, bool highlight)
         {
-            try
+            if (p == null)
             {
-                if (GameSettings.EDGE_HIGHLIGHTING_PPFX)
-                {
-                    Transform model = p.FindModelTransform("model");
-                    Highlighter h = model.gameObject.GetComponent<Highlighter>();
-                    if (h != null)
-                    {
-                        if (highlight)
-                        {
-                            h.ConstantOn(XKCDColors.Orange);
-                        }
-                        else
-                        {
-                            h.ConstantOff();
-                        }
+                return;
+            }
 
-                        if (symLock)
+            if (GameSettings.EDGE_HIGHLIGHTING_PPFX)
+            {
+                Transform model = p.FindModelTransform("model");
+                Highlighter h = model.gameObject.GetComponent<Highlighter>();
+                if (h != null)
+                {
+                    if (highlight)
+                    {
+                        h.ConstantOn(XKCDColors.Orange);
+                    }
+                    else
+                    {
+                        h.ConstantOff();
+                    }
+
+                    if (symLock)
+                    {
+                        foreach (Part symPart in p.symmetryCounterparts)
                         {
-                            foreach (Part symPart in p.symmetryCounterparts)
+                            Transform symModel = symPart.FindModelTransform("model");
+                            Highlighter symH = symModel.gameObject.GetComponent<Highlighter>();
+                            if (symH != null)
                             {
-                                Transform symModel = symPart.FindModelTransform("model");
-                                Highlighter symH = symModel.gameObject.GetComponent<Highlighter>();
-                                if (symH != null)
+                                if (highlight)
                                 {
-                                    if (highlight)
-                                    {
-                                        // Highlight the secondary symmetrical parts in a different colour
-                                        symH.ConstantOn(XKCDColors.Yellow);
-                                    }
-                                    else
-                                    {
-                                        symH.ConstantOff();
-                                    }
+                                    // Highlight the secondary symmetrical parts in a different colour
+                                    symH.ConstantOn(XKCDColors.Yellow);
+                                }
+                                else
+                                {
+                                    symH.ConstantOff();
                                 }
                             }
                         }
                     }
                 }
-                else
-                {
-                    p.SetHighlight(highlight, false);
-                    if (symLock)
-                    {
-                        foreach (Part symPart in p.symmetryCounterparts)
-                        {
-                            symPart.SetHighlight(highlight, false);
-                        }
-                    }
-
-                }
             }
-            catch (Exception ex)
+            else
             {
-                // catch any errors from trying to set highlighting on nonexistent parts.
-                // TODO: fix this properly
+                p.SetHighlight(highlight, false);
+                if (symLock)
+                {
+                    foreach (Part symPart in p.symmetryCounterparts)
+                    {
+                        symPart.SetHighlight(highlight, false);
+                    }
+                }
+
             }
+
 
         }
 
