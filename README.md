@@ -15,6 +15,10 @@ CKAN: http://forum.kerbalspaceprogram.com/threads/100067
 
 Curse: http://www.curse.com/ksp-mods/kerbal/232303-part-commander
 
+INSTALLATION
+
+Copy the "PartCommander" folder and all its contents into your KSP/GameData folder.
+
 CHANGELOG
 
 1.0.2.2 - 2015/07/09
