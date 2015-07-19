@@ -591,8 +591,9 @@ namespace PartCommander
 
         public void partWindow(int id)
         {
+            if (!currentWindow.partWindows.ContainsKey(id)) return;
             PCWindow currentPOW = currentWindow.partWindows[id];
-            if (currentPOW.currentPart == null)
+            if (currentPOW.currentPart == null || currentPOW.currentPart.vessel != FlightGlobals.ActiveVessel)
             {
                 currentWindow.partWindows.Remove(id);
                 return;
