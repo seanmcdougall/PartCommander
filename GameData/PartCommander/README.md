@@ -21,6 +21,9 @@ Copy the "PartCommander" folder and all its contents into your KSP/GameData fold
 
 CHANGELOG
 
+1.0.2.4 - 2015/07/31
+- fixes a NRE that was showing up in the logs
+
 1.0.2.3 - 2015/07/18
 - bug fixes to hover logic and part highlighting
 

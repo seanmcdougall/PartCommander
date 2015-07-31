@@ -173,8 +173,8 @@ echo "Processing Release post-build"
 cd ..\..\
 copy README.md GameData\$(TargetName)
 copy LICENSE.md GameData\$(TargetName)
-del releases\$(TargetName)-latest.zip
-7za a -tzip releases\$(TargetName)-latest.zip GameData
+del $(TargetName).zip
+7za a -tzip $(TargetName).zip GameData
 goto :endIf
 
 :endIf
