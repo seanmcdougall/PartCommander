@@ -896,20 +896,23 @@ namespace PartCommander
         private int showOptions(Part p, bool symLock, bool showRes, bool showTemp, bool showAero)
         {
             int optionsCount = 0;
-            string multiEngineMode = getEngineMode(p);
-            optionsCount += showFields(p, symLock, multiEngineMode);
-            optionsCount += showEvents(p, symLock, multiEngineMode);
-            if (showRes)
+            if (p != null)
             {
-                optionsCount += showResources(p);
-            }
-            if (showTemp)
-            {
-                optionsCount += showTemperatureInfo(p);
-            }
-            if (showAero)
-            {
-                optionsCount += showAeroInfo(p);
+                string multiEngineMode = getEngineMode(p);
+                optionsCount += showFields(p, symLock, multiEngineMode);
+                optionsCount += showEvents(p, symLock, multiEngineMode);
+                if (showRes)
+                {
+                    optionsCount += showResources(p);
+                }
+                if (showTemp)
+                {
+                    optionsCount += showTemperatureInfo(p);
+                }
+                if (showAero)
+                {
+                    optionsCount += showAeroInfo(p);
+                }
             }
             return (optionsCount);
         }
@@ -1326,7 +1329,6 @@ namespace PartCommander
             {
                 multiEngineMode = mme.mode;
             }
-
             return multiEngineMode;
         }
 
