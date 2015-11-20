@@ -21,6 +21,10 @@ Copy the "PartCommander" folder and all its contents into your KSP/GameData fold
 
 CHANGELOG
 
+1.0.3.0 - 2015/11/20
+- recompiled for KSP 1.0.5
+- fix a bug where hiding window with keyboard shortcut failed to release control lock
+
 1.0.2.4 - 2015/07/31
 - fixes a NRE that was showing up in the logs
 

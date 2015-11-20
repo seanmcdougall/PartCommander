@@ -445,6 +445,12 @@ namespace PartCommander
         public void hideWindow() // triggered by toolbar
         {
             PCScenario.Instance.gameSettings.visibleWindow = false;
+            if (controlsLocked)
+            {
+                InputLockManager.RemoveControlLock(controlsLockID);
+                controlsLocked = false;
+                clearHighlighting(highlightedParts);
+            }
         }
 
         public void toggleWindow()
