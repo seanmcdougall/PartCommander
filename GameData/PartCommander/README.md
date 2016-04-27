@@ -1,25 +1,18 @@
 # Part Commander
 Plugin for Kerbal Space Program (KSP).  Access the right-click action menus from all parts on the current vessel in a single consolidated interface.
 
-Copyright 2015, Sean McDougall
-
-DOWNLOAD LINKS
+Copyright 2016, Sean McDougall
 
 GitHub: https://github.com/seanmcdougall/PartCommander
-
-KSP Forum: http://forum.kerbalspaceprogram.com/threads/127575
-
-KerbalStuff: http://www.kerbalstuff.com/mod/965/Part%20Commander
-
-CKAN: http://forum.kerbalspaceprogram.com/threads/100067
-
-Curse: http://www.curse.com/ksp-mods/kerbal/232303-part-commander
 
 INSTALLATION
 
 Copy the "PartCommander" folder and all its contents into your KSP/GameData folder.
 
 CHANGELOG
+
+1.1 - 2016/04/27
+- fixed and recompiled for KSP 1.1
 
 1.0.3.0 - 2015/11/20
 - recompiled for KSP 1.0.5

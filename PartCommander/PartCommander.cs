@@ -22,6 +22,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 using HighlightingSystem;
+using KSP.UI.Screens;
 
 namespace PartCommander
 {
