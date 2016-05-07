@@ -11,6 +11,9 @@ Copy the "PartCommander" folder and all its contents into your KSP/GameData fold
 
 CHANGELOG
 
+1.1.1 - 2016/05/06
+- recompiled for KSP 1.1.2
+
 1.1 - 2016/04/27
 - fixed and recompiled for KSP 1.1
 
